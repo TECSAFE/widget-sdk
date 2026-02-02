@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
-    "isolatedModules": true,
+    "isolatedModules": false,
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "Node",
+    "baseUrl": "."
   },
-  "exclude": ["dist"]
+  "exclude": [
+    "dist"
+  ]
 }

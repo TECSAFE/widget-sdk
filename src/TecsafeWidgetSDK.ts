@@ -1,12 +1,7 @@
 import { BaseWidget } from './types/BaseWidget'
-import { OfcpConfig } from './types/Config'
-import {
-  FullScreenClosedMessage,
-  FullScreenOpenedMessage,
-  Message,
-  MessageType,
-  SetTokenMessage,
-} from './types/messages'
+import { WidgetManagerConfig } from './types/WidgetManagerConfig'
+import { MessageEnvelope, MessageDefinition } from './messages/Contract'
+import { OUT_MESSAGES } from './messages'
 import { AppWidget } from './widget/AppWidget'
 import { parseCustomerJwt } from '@tecsafe/jwt-sdk'
 import { CartWidget } from './widget/CartWidget'
@@ -17,23 +12,25 @@ import { EventType } from './types/EventType'
 /**
  * The main entry point for the OFCP App JS SDK
  */
-export class TecsafeApi {
+export class TecsafeWidgetManager {
   /**
    * The main entry point for the OFCP App JS SDK.
    * This class should only be instantiated after the user has consented to the terms, conditions, and privacy policy!
-   * @param tokenFN A function that returns the customer token as a string inside a promise
-   * @param config Advanced configuration for the SDK, rarely needed
+   * @param customerTokenCallback A function that returns the customer token as a string inside a promise
+   * @param addToCartCallback A function that adds a product to the cart, given the product ID and identifier, returning a boolean inside a promise indicating success
+   * @param widgetManagerConfig The configuration for the SDK
    * @throws An error if the configuration is invalid
    */
   constructor(
-    private readonly tokenFN: () => Promise<string>,
-    private readonly config: OfcpConfig = new OfcpConfig()
+    private readonly customerTokenCallback: () => Promise<string>,
+    private readonly addToCartCallback: (productId: string, identifier: string) => Promise<boolean>,
+    private readonly widgetManagerConfig: WidgetManagerConfig,
   ) {
-    const url = new URL(config.widgetBaseURL)
-    if (!config.allowedOrigins.includes(url.origin)) {
+    const url = new URL(widgetManagerConfig.widgetBaseURL)
+    if (!widgetManagerConfig.allowedOrigins.includes(url.origin)) {
       throw new Error('The widgetBaseURL must be in the allowedOrigins list')
     }
-    this.appWidget = new AppWidget(config, document.createElement('div'), this)
+    this.appWidget = new AppWidget(widgetManagerConfig, document.createElement('div'), this)
     // To don't make it to obvious thats a "browserID"
     // We shorten it to "bid"
     this.browserId = localStorage.getItem('ofcp-bid')
@@ -119,10 +116,7 @@ export class TecsafeApi {
    */
   public openFullScreen(url: string): void {
     this.appWidget.setUrl(url)
-    this.sendToAllWidgets({
-      type: MessageType.FULL_SCREEN_OPENED,
-      payload: null,
-    } as FullScreenOpenedMessage)
+    this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenOpened.create())
   }
 
   /**
@@ -133,19 +127,72 @@ export class TecsafeApi {
   public closeFullScreen(destroy = false): void {
     if (!destroy) this.appWidget.hide()
     else this.appWidget.destroy()
-    this.sendToAllWidgets({
-      type: MessageType.FULL_SCREEN_CLOSED,
-      payload: null,
-    } as FullScreenClosedMessage)
+    this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenClosed.create())
   }
 
   /**
    * Sends a message to all widgets
    * @param message The message to send
    */
-  public sendToAllWidgets(message: Message): void {
+  /**
+   * Sends a message to all widgets
+   * @param message The message to send
+   */
+  public sendToAllWidgets(message: MessageEnvelope): void {
     for (const widget of this.widgets) widget.sendMessage(message)
     this.appWidget.sendMessage(message)
+  }
+
+  private listeners: Map<string, ((payload: any, widget: BaseWidget) => void)[]> = new Map()
+
+  /**
+   * Listens to a message from any widget
+   * @param message The message definition
+   * @param handler The handler to call when the message is received
+   * @returns A function to unsubscribe
+   */
+  public listen<P>(
+    message: MessageDefinition<P>,
+    handler: (payload: P, widget: BaseWidget) => void
+  ): () => void {
+    if (!this.listeners.has(message.type)) {
+      this.listeners.set(message.type, [])
+    }
+    this.listeners.get(message.type)?.push(handler)
+
+    // Ensure we register this listener on all existing widgets
+    // Actually, BaseWidget needs to call back to SDK listeners.
+    // See BaseWidget refactor plan below.
+    return () => {
+      const listeners = this.listeners.get(message.type)
+      if (listeners) {
+        const index = listeners.indexOf(handler)
+        if (index !== -1) {
+          listeners.splice(index, 1)
+        }
+      }
+    }
+  }
+
+  /**
+   * Internal method to trigger listeners from a widget
+   */
+  public _triggerListeners(type: string, payload: any, widget: BaseWidget) {
+    const listeners = this.listeners.get(type)
+    if (listeners) {
+      for (const listener of listeners) {
+        listener(payload, widget)
+      }
+    }
+  }
+
+  /**
+   * Emits a message to all widgets
+   * @param message The message definition
+   * @param payload The payload to send
+   */
+  public emit<P>(message: MessageDefinition<P>, payload: P): void {
+    this.sendToAllWidgets(message.create(payload))
   }
 
   /**
@@ -180,7 +227,7 @@ export class TecsafeApi {
   public async getToken(refresh = false): Promise<string> {
     if (!refresh && this.tokenTimeout > Date.now()) return this.token
     if (this.tokenPromise) return this.tokenPromise
-    this.tokenPromise = this.tokenFN()
+    this.tokenPromise = this.customerTokenCallback()
     const token = await this.saveToken(await this.tokenPromise)
     this.tokenPromise = null
     return token
@@ -193,10 +240,7 @@ export class TecsafeApi {
   public async refreshToken(token?: string | null): Promise<void> {
     if (token) await this.saveToken(token)
     else token = await this.getToken(true)
-    this.sendToAllWidgets({
-      type: MessageType.SET_TOKEN,
-      payload: token,
-    } as SetTokenMessage)
+    this.sendToAllWidgets(OUT_MESSAGES.OutMessageSetToken.create(token))
   }
 
   /**
@@ -215,7 +259,7 @@ export class TecsafeApi {
    * @param widget The widget to add
    * @returns The widget
    */
-  private createWidget(widget: BaseWidget): BaseWidget {
+  private createWidget<T extends BaseWidget>(widget: T): T {
     this.widgets.push(widget)
     widget.show()
     return widget
@@ -228,8 +272,8 @@ export class TecsafeApi {
    */
   public createCartWidget(el: HTMLElement): CartWidget {
     return this.createWidget(
-      new CartWidget(this.config, el, this)
-    ) as CartWidget
+      new CartWidget(this.widgetManagerConfig, el, this)
+    )
   }
 
   /**
@@ -239,8 +283,8 @@ export class TecsafeApi {
    */
   public createProductDetailWidget(el: HTMLElement): ProductDetailWidget {
     return this.createWidget(
-      new ProductDetailWidget(this.config, el, this)
-    ) as ProductDetailWidget
+      new ProductDetailWidget(this.widgetManagerConfig, el, this)
+    )
   }
 
   /**
@@ -255,8 +299,8 @@ export class TecsafeApi {
    * Gets the config
    * @returns The config
    */
-  public getConfig(): OfcpConfig {
-    return this.config
+  public getConfig(): WidgetManagerConfig {
+    return this.widgetManagerConfig
   }
 
   /**

@@ -3,7 +3,7 @@
  * These are for example used to show the same page after a refresh.
  * @see {@link writeUrlParams} {@link readUrlParams}
  */
-export interface OfcpUrlParam {
+export interface WidgetManagerUrlParam {
   browserId: string
   url: string
 }
@@ -11,7 +11,7 @@ export interface OfcpUrlParam {
 /**
  * Writes the given parameters to the url of the parent page.
  */
-export function writeUrlParams(params: OfcpUrlParam): void {
+export function writeUrlParams(params: WidgetManagerUrlParam): void {
   const url = new URL(window.location.href)
   url.searchParams.set('x-ofcp-bid', params.browserId)
   url.searchParams.set('x-ofcp-url', params.url)
@@ -21,7 +21,7 @@ export function writeUrlParams(params: OfcpUrlParam): void {
 /**
  * Reads the parameters from the url of the parent page.
  */
-export function readUrlParams(): OfcpUrlParam {
+export function readUrlParams(): WidgetManagerUrlParam {
   const url = new URL(window.location.href)
   return {
     browserId: url.searchParams.get('x-ofcp-bid') || '',

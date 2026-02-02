@@ -1,5 +1,5 @@
 import { BaseWidget } from '../types/BaseWidget'
-import { MessageType } from '../types/messages'
+
 import { writeUrlParams, clearUrlParams } from '../util/UrlParamRW'
 
 /**
@@ -63,15 +63,7 @@ export class AppWidget extends BaseWidget {
     style.zIndex = '1000000'
   }
 
-  /**
-   * @inheritdoc
-   */
-  protected async onMessageExtended(event: MessageEvent): Promise<boolean> {
-    if (event.data.type !== MessageType.UPDATE_FULL_SCREEN_URL) return false
-    const url = event.data.payload as string
-    writeUrlParams({ browserId: this.api.getBrowserId(), url })
-    return true
-  }
+
 
   /**
    * If the iframe loads a new page, stores the url in the get parameters of the parent page.
