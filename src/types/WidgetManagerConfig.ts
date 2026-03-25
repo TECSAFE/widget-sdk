@@ -1,5 +1,7 @@
 /**
- * Required configuration properties for the Widget Manager
+ * Required configuration properties for the Widget Manager.
+ * See the {@link WidgetManagerConfig} for the full configuration.
+ * @category Config
  */
 export class RequiredWidgetManagerConfig {
   /**
@@ -11,13 +13,9 @@ export class RequiredWidgetManagerConfig {
    */
   public languageRFC4647: string
   /**
-   * The currency code, e.g. "USD"
+   * The ISO 4217 currency code, e.g. "USD"
    */
-  public currencyCode: string
-  /**
-   * The currency symbol, e.g. "$"
-   */
-  public currencySymbol: string
+  public currencyCodeISO4217: string
   /**
    * Whether tax is included in the prices
    */
@@ -27,13 +25,16 @@ export class RequiredWidgetManagerConfig {
 /**
  * The main configuration class for the Widget Manager.
  * Containing both required and optional configuration properties.
+ * @category Config
  */
 export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
   /**
    * Creates a new WidgetManagerConfig instance
    * @param init Required and optional configuration properties to initialize the instance with
    */
-  constructor(init: Partial<WidgetManagerConfig> & RequiredWidgetManagerConfig) {
+  constructor(
+    init: Partial<WidgetManagerConfig> & RequiredWidgetManagerConfig
+  ) {
     super()
     Object.assign(this, init)
   }

@@ -1,57 +1,90 @@
-# App-JS-SDK
+# Widget SDK
 
-The TECSAFE App-JS-SDK provides a convenience wrapper to interact with the TECSAFE App.
+The TECSAFE Widget SDK provides a convenience wrapper to interact with TECSAFE Widgets, handling IFrame communication and JWT management automatically.
 
 ## API Usage
 
-The App-JS-SDK is on npm publicly available. You can install it via npm or yarn.
+The Widget SDK is publicly available on npm. You can install it via npm or yarn:
 
 ```bash
-npm install @tecsafe/app-js-sdk
+npm install @tecsafe/widget-sdk
 ```
 
 ### Initialize the SDK
 
-```js
-import { TecsafeAPI } from "@tecsafe/app-js-sdk"; // or require("@tecsafe/app-js-sdk");
-const api = new TecsafeAPI(async () => {
-  const response = await fetch("https://mybackend.com/tecsafe/token");
-  const json = await response.json();
-  return json.token;
-});
+First, initialize the `TecsafeWidgetManager`. It requires three arguments:
+
+1. `customerTokenCallback`: A function returning a promise with the customer token.
+2. `addToCartCallback`: An object implementing either a `single` or `bulk` add to cart handler.
+3. `config`: The SDK configuration containing tracking and regional settings.
+
+```typescript
+import { TecsafeWidgetManager } from '@tecsafe/widget-sdk'
+
+const manager = new TecsafeWidgetManager(
+  // 1. Customer Token Callback
+  async () => {
+    const response = await fetch('https://mybackend.com/tecsafe/token')
+    const json = await response.json()
+    return json.token
+  },
+  // 2. Add To Cart Handler
+  {
+    single: async (articleNumber, quantity, configurationId) => {
+      // Your custom logic to add an item to the cart
+      return true // Return boolean to indicate success
+    },
+  },
+  // 3. Configuration
+  {
+    trackingAllowed: true,
+    languageRFC4647: 'en-US',
+    currencyCodeISO4217: 'USD',
+    taxIncluded: true,
+  }
+)
 ```
 
-It is important to only instantiate the API once, as other wise the SDK could fetch multiple tokens.
+It is important to instantiate the manager only once, as otherwise the SDK could fetch multiple tokens or cause duplicate event bindings.
 
 ### Create a Widget
 
-The createWidget method creates a widget and appends it to the given element.
+Use the manager instance to create widgets and attach them to DOM elements.
 
-```js
-const cartWidget = api.createCartWidget(document.getElementById("cart-widget"));
-const pdWidget = api.createProductDetailWidget(document.getElementById("product-detail-widget"));
+```javascript
+const pdWidget = manager.createProductDetailWidget(
+  document.getElementById('product-detail-widget')
+)
 ```
 
-### Update the token
+### Update the Token
 
-If an user logs in or logs out, you can update the token by calling the `refreshToken` method.
+If a user logs in or logs out, you can update the token by calling the `refreshToken` method.
 
-```js
-api.refreshToken();
-// this will call the tokenFN from the constructor,
-// alternatively you can also pass the token directly:
-api.refreshToken("new-token");
+```javascript
+manager.refreshToken()
+// This will call the customerTokenCallback from the constructor.
+// Alternatively, you can also pass the token directly:
+manager.refreshToken('new-token')
 ```
 
-### Destroy all widgets
+### Destroy All Widgets
 
-If an user withdraws consent, or the user navigates away from the page (relevant for SPA), you can destroy all widgets by calling the `destroy` method.
+If a user withdraws consent, or navigates away from the page (relevant for SPAs), you can destroy all widgets and clean up event listeners by calling the `destroyAll` method.
 
-```js
-api.destroy();
+```javascript
+manager.destroyAll()
 ```
 
-## Example Implementation
+### Events and Documentation
+
+When referring to the generated SDK documentation for events:
+
+- The **`InMessageInternal`** category can be mostly ignored, as these events are handled internally by the SDK.
+- The **`OutMessage`** category primarily contains responses or status update events that the SDK also handles internally.
+- If you are expected to respond to an event, it will be clearly stated in the description of an **`InMessage`**.
+
+## Example Implementation (Vue.js)
 
 ```html
 <template>
@@ -64,23 +97,41 @@ api.destroy();
 </template>
 
 <script lang="ts" setup>
-import { TecsafeApi } from '@tecsafe/app-js-sdk';
-const container = ref<HTMLElement | null>(null);
-const api = ref<TecsafeApi | null>(null);
+  import { onMounted, onBeforeUnmount, ref } from 'vue'
+  import { TecsafeWidgetManager } from '@tecsafe/widget-sdk'
 
-onMounted(() => {
-  if (!container.value) throw new Error("Container not found");
-  api.value = new TecsafeApi(async () => {
-    const response = await fetch("https://mybackend.com/tecsafe/token");
-    const json = await response.json();
-    return json.token;
-  });
-  api.value.createCartWidget(container.value);
-});
+  const container = ref<HTMLElement | null>(null)
+  const manager = ref<TecsafeWidgetManager | null>(null)
 
-onBeforeUnmount(() => {
-  if (!api.value) return;
-  api.value.destroyAll();
-});
+  onMounted(() => {
+    if (!container.value) throw new Error('Container not found')
+
+    manager.value = new TecsafeWidgetManager(
+      async () => {
+        const response = await fetch('https://mybackend.com/tecsafe/token')
+        const json = await response.json()
+        return json.token
+      },
+      {
+        single: async (articleNumber, quantity, configurationId) => {
+          // Implementation
+          return true
+        },
+      },
+      {
+        trackingAllowed: true,
+        languageRFC4647: 'en-US',
+        currencyCodeISO4217: 'USD',
+        taxIncluded: true,
+      }
+    )
+
+    manager.value.createProductDetailWidget(container.value)
+  })
+
+  onBeforeUnmount(() => {
+    if (!manager.value) return
+    manager.value.destroyAll()
+  })
 </script>
 ```

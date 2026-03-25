@@ -1,18 +1,22 @@
 import { TecsafeWidgetManager } from '../TecsafeWidgetSDK'
-import { SDK_VERSION } from '../util/Version'
 import { WidgetManagerConfig } from './WidgetManagerConfig'
-import { MessageEnvelope, MessageDefinition, WidgetMessageEvent } from '../messages/Contract'
-import { IN_MESSAGES, OUT_MESSAGES } from '../messages'
+import { MessageDefinition, WidgetMessageEvent } from '../messages/Contract'
+import { IN_MESSAGES, OUT_MESSAGES, OutMessageEnvelope } from '../messages/Messages'
+import { MessageEnvelope } from './MessageEnvelope'
+
+import { EventBus } from '../util/EventBus'
+import { IWidget } from './Context'
 
 /**
  * Base class for all widgets, providing common functionality
  */
-export class BaseWidget {
+export class BaseWidget extends EventBus implements IWidget {
   constructor(
     protected readonly config: WidgetManagerConfig,
     protected el: HTMLElement,
     protected readonly api: TecsafeWidgetManager
   ) {
+    super()
     window.addEventListener('message', this.onMessage.bind(this))
   }
 
@@ -31,13 +35,13 @@ export class BaseWidget {
    * @param message The message to send
    * @returns void
    */
-  public sendMessage(message: MessageEnvelope): void {
+  public sendMessage(message: OutMessageEnvelope): void {
     if (!this.iframe) return
     const iframeSrc = new URL(this.iframe.src)
     const origin = iframeSrc.origin
     if (!this.config.allowedOrigins.includes(origin)) {
       console.error(
-        '[OFCP] Widget',
+        '[TECSAFE] Widget',
         this.el,
         'cannot send message to origin',
         origin
@@ -62,18 +66,19 @@ export class BaseWidget {
 
     const respond = (msg: MessageEnvelope) => this.sendMessage(msg)
 
-    for (const msgDef of Object.values(IN_MESSAGES) as MessageDefinition<any>[]) {
+    for (const msgDef of Object.values(
+      IN_MESSAGES
+    ) as MessageDefinition<any>[]) {
       if (msgDef.type === event.data.type) {
         if (msgDef.defaultHandler) {
-          await msgDef.defaultHandler({ event: event.data.payload, respond }, this.api, this)
+          await msgDef.defaultHandler(
+            { event: event.data.payload, respond },
+            this.api,
+            this
+          )
         }
 
-        const listeners = this.listeners.get(event.data.type)
-        if (listeners) {
-          for (const listener of listeners) {
-            listener(event.data.payload)
-          }
-        }
+        this.trigger(event.data.type, event.data.payload)
 
         this.api._triggerListeners(event.data.type, event.data.payload, this)
         return
@@ -129,7 +134,8 @@ export class BaseWidget {
   /**
    * Destroys the widget
    * @returns void
-   * @see {@link BaseWidget.preDestroy} {@link BaseWidget.postDestroy}
+   * @see {@link BaseWidget.preDestroy}
+   * @see {@link BaseWidget.postDestroy}
    */
   public destroy(): void {
     if (!this.iframe) return
@@ -143,40 +149,56 @@ export class BaseWidget {
    * Hides the widget, without destroying it
    * @returns void
    */
-  private listeners: Map<string, ((payload: any) => void)[]> = new Map()
-
   /**
    * Listens to a message from the iframe
    * @param message The message definition
    * @param handler The handler to call when the message is received
-   * @returns A function to unsubscribe
+   * @returns this
    */
-  public listen<P>(
+  public override on<P>(
     message: MessageDefinition<P>,
     handler: (payload: P) => void
-  ): () => void {
-    if (!this.listeners.has(message.type)) {
-      this.listeners.set(message.type, [])
-    }
-    this.listeners.get(message.type)?.push(handler)
-    return () => {
-      const listeners = this.listeners.get(message.type)
-      if (listeners) {
-        const index = listeners.indexOf(handler)
-        if (index !== -1) {
-          listeners.splice(index, 1)
-        }
-      }
-    }
+  ): this {
+    return super.on(message, handler)
+  }
+
+  /**
+   * Listens to a message from the iframe once
+   * @param message The message definition
+   * @param handler The handler to call when the message is received
+   * @returns this
+   */
+  public override once<P>(
+    message: MessageDefinition<P>,
+    handler: (payload: P) => void
+  ): this {
+    return super.once(message, handler)
+  }
+
+  /**
+   * Stops listening to a message from the iframe
+   * @param message The message definition
+   * @param handler The handler to remove
+   * @returns this
+   */
+  public override off<P>(
+    message: MessageDefinition<P>,
+    handler: (payload: P) => void
+  ): this {
+    return super.off(message, handler)
   }
 
   /**
    * Emits a message to the iframe
    * @param message The message definition
    * @param payload The payload to send
+   * @returns this
    */
-  public emit<P>(message: MessageDefinition<P>, payload: P): void {
-    this.sendMessage(message.create(payload))
+  public emit<P>(message: MessageDefinition<P>, payload: P): this {
+    if (!(Object.values(OUT_MESSAGES).map(m => m.type).includes(message.type)))
+      throw new Error('Only outgoing messages can be emitted')
+    this.sendMessage(message.create(payload) as OutMessageEnvelope)
+    return this
   }
 
   /**
@@ -196,7 +218,9 @@ export class BaseWidget {
    * @returns Promise<boolean> Whether the message was handled
    * @see {@link BaseWidget.onMessage}
    */
-  protected async onMessageExtended(event: WidgetMessageEvent<any>): Promise<boolean> {
+  protected async onMessageExtended(
+    event: WidgetMessageEvent<any>
+  ): Promise<boolean> {
     return false
   }
 
@@ -204,45 +228,45 @@ export class BaseWidget {
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.show}
    */
-  protected preShow(): void { }
+  protected preShow(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.show}
    */
-  protected postShow(): void { }
+  protected postShow(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.show}
    */
-  protected preCreate(): void { }
+  protected preCreate(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.show}
    */
-  protected postCreate(): void { }
+  protected postCreate(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.destroy}
    */
-  protected preDestroy(): void { }
+  protected preDestroy(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.destroy}
    */
-  protected postDestroy(): void { }
+  protected postDestroy(): void {}
 
   /**
    * Lifecycle hook for extending classes
    */
-  protected preHide(): void { }
+  protected preHide(): void {}
 
   /**
    * Lifecycle hook for extending classes
    */
-  protected postHide(): void { }
+  protected postHide(): void {}
 }

@@ -1,8 +1,15 @@
-import { defineMessage } from "../Contract";
+import { defineMessage } from '../Contract'
 
 /**
- * Incoming request from the iframe to destroy the full screen ui (aka AppWidget)
+ * **The WidgetManager does handle this event under the hood by destroying the AppWidget.**
+ * Incoming request from the iframe to destroy the full screen ui (aka AppWidget).
+ * @category InMessageInternal
+ * @see {@link AppWidget}
+ * @see {@link OutMessageFullScreenClosed}
  */
-export const InMessageDestroyFullScreen = defineMessage<void>('destroy-full-screen', (e, sdk) => {
-  sdk.closeFullScreen(true);
-});
+export const InMessageDestroyFullScreen = defineMessage<void>(
+  'destroy-full-screen',
+  (e, sdk) => {
+    sdk.closeFullScreen(true)
+  }
+)

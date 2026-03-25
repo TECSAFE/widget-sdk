@@ -1,20 +1,27 @@
 import { BaseWidget } from './types/BaseWidget'
 import { WidgetManagerConfig } from './types/WidgetManagerConfig'
-import { MessageEnvelope, MessageDefinition } from './messages/Contract'
-import { OUT_MESSAGES } from './messages'
+import { MessageEnvelope } from './types/MessageEnvelope'
+import { MessageDefinition } from './messages/Contract'
+import { OUT_MESSAGES } from './messages/Messages'
 import { AppWidget } from './widget/AppWidget'
-import { parseCustomerJwt } from '@tecsafe/jwt-sdk'
-import { CartWidget } from './widget/CartWidget'
 import { ProductDetailWidget } from './widget/ProductDetailWidget'
 import { readUrlParams, clearUrlParams } from './util/UrlParamRW'
-import { EventType } from './types/EventType'
+
+import { EventBus } from './util/EventBus'
+import { AddToCartHandler } from './types/AddToCardHandler'
+
+// import { parseCustomerJwt } from '@tecsafe/jwt-sdk'
+const parseCustomerJwt = (...args: any[]): any => {
+  throw new Error('Not implemented')
+}
 
 /**
- * The main entry point for the OFCP App JS SDK
+ * The main entry point for the TECSAFE Widget SDK
+ * @category SDK
  */
-export class TecsafeWidgetManager {
+export class TecsafeWidgetManager extends EventBus {
   /**
-   * The main entry point for the OFCP App JS SDK.
+   * The main entry point for the TECSAFE Widget SDK.
    * This class should only be instantiated after the user has consented to the terms, conditions, and privacy policy!
    * @param customerTokenCallback A function that returns the customer token as a string inside a promise
    * @param addToCartCallback A function that adds a product to the cart, given the product ID and identifier, returning a boolean inside a promise indicating success
@@ -23,32 +30,37 @@ export class TecsafeWidgetManager {
    */
   constructor(
     private readonly customerTokenCallback: () => Promise<string>,
-    private readonly addToCartCallback: (productId: string, identifier: string) => Promise<boolean>,
-    private readonly widgetManagerConfig: WidgetManagerConfig,
+    private readonly addToCartCallback: AddToCartHandler,
+    private readonly widgetManagerConfig: WidgetManagerConfig
   ) {
+    super()
     const url = new URL(widgetManagerConfig.widgetBaseURL)
     if (!widgetManagerConfig.allowedOrigins.includes(url.origin)) {
       throw new Error('The widgetBaseURL must be in the allowedOrigins list')
     }
-    this.appWidget = new AppWidget(widgetManagerConfig, document.createElement('div'), this)
+    this.appWidget = new AppWidget(
+      widgetManagerConfig,
+      document.createElement('div'),
+      this
+    )
     // To don't make it to obvious thats a "browserID"
     // We shorten it to "bid"
-    this.browserId = localStorage.getItem('ofcp-bid')
+    this.browserId = localStorage.getItem('tecsafe-bid')
     if (!this.browserId) {
       this.browserId = Math.random().toString(36).slice(2)
-      localStorage.setItem('ofcp-bid', this.browserId)
+      localStorage.setItem('tecsafe-bid', this.browserId)
     }
     const params = readUrlParams()
     if (!params.browserId) return
     if (this.browserId !== params.browserId) {
       clearUrlParams()
-      console.warn('[OFCP] Browser ID mismatch, clearing URL params')
+      console.warn('[TECSAFE] Browser ID mismatch, clearing URL params')
       return
     }
     try {
       this.openFullScreen(params.url)
     } catch (e) {
-      console.error('[OFCP] Failed to open full screen:', e)
+      console.error('[TECSAFE] Failed to open full screen:', e)
     }
   }
 
@@ -60,50 +72,7 @@ export class TecsafeWidgetManager {
   private tokenPromise: Promise<string> | null = null
   private refreshTimeoutId: number | null = null
   private fullScreenData: any
-  private eventListeners: { [key: string]: ((...args: any[]) => void)[] } = {}
 
-  /**
-   * Adds an event listener to the SDK
-   * @param event The event to listen for, see {@link EventType}
-   * @param listener The listener to call when the event is triggered.
-   */
-  public addEventListener(
-    event: EventType,
-    listener: (...args: any[]) => void
-  ): void {
-    if (!this.eventListeners[event]) this.eventListeners[event] = []
-    this.eventListeners[event].push(listener)
-  }
-
-  /**
-   * Removes an event listener from the SDK
-   * @param event The event to remove the listener from
-   * @param listener The listener to remove
-   */
-  public removeEventListener(
-    event: EventType,
-    listener: (...args: any[]) => void
-  ): void {
-    if (!this.eventListeners[event]) return
-    const index = this.eventListeners[event].indexOf(listener)
-    if (index !== -1) this.eventListeners[event].splice(index, 1)
-    if (this.eventListeners[event].length === 0)
-      delete this.eventListeners[event]
-  }
-
-  /**
-   * Gets all event listeners
-   * @returns An object with the event names as keys, and the listeners as values
-   */
-  public getEventListeners(): { [key: string]: ((...args: any[]) => void)[] } {
-    return this.eventListeners
-  }
-
-  /**
-   * Get the browser ID, a random string that is stored in localStorage.
-   * This is NOT used for tracking, but to identify the browser if the user mistakenly shares the URL with OFCP data in it.
-   * @see {@link clearUrlParams}
-   */
   public getBrowserId(): string {
     return this.browserId
   }
@@ -143,56 +112,61 @@ export class TecsafeWidgetManager {
     this.appWidget.sendMessage(message)
   }
 
-  private listeners: Map<string, ((payload: any, widget: BaseWidget) => void)[]> = new Map()
-
   /**
    * Listens to a message from any widget
    * @param message The message definition
    * @param handler The handler to call when the message is received
-   * @returns A function to unsubscribe
+   * @returns this
    */
-  public listen<P>(
+  public override on<P>(
     message: MessageDefinition<P>,
     handler: (payload: P, widget: BaseWidget) => void
-  ): () => void {
-    if (!this.listeners.has(message.type)) {
-      this.listeners.set(message.type, [])
-    }
-    this.listeners.get(message.type)?.push(handler)
+  ): this {
+    return super.on(message, handler)
+  }
 
-    // Ensure we register this listener on all existing widgets
-    // Actually, BaseWidget needs to call back to SDK listeners.
-    // See BaseWidget refactor plan below.
-    return () => {
-      const listeners = this.listeners.get(message.type)
-      if (listeners) {
-        const index = listeners.indexOf(handler)
-        if (index !== -1) {
-          listeners.splice(index, 1)
-        }
-      }
-    }
+  /**
+   * Listens to a message from any widget once
+   * @param message The message definition
+   * @param handler The handler to call when the message is received
+   * @returns this
+   */
+  public override once<P>(
+    message: MessageDefinition<P>,
+    handler: (payload: P, widget: BaseWidget) => void
+  ): this {
+    return super.once(message, handler)
+  }
+
+  /**
+   * Stops listening to a message from any widget
+   * @param message The message definition
+   * @param handler The handler to remove
+   * @returns this
+   */
+  public override off<P>(
+    message: MessageDefinition<P>,
+    handler: (payload: P, widget: BaseWidget) => void
+  ): this {
+    return super.off(message, handler)
   }
 
   /**
    * Internal method to trigger listeners from a widget
    */
   public _triggerListeners(type: string, payload: any, widget: BaseWidget) {
-    const listeners = this.listeners.get(type)
-    if (listeners) {
-      for (const listener of listeners) {
-        listener(payload, widget)
-      }
-    }
+    this.trigger(type, payload, widget)
   }
 
   /**
    * Emits a message to all widgets
    * @param message The message definition
    * @param payload The payload to send
+   * @returns this
    */
-  public emit<P>(message: MessageDefinition<P>, payload: P): void {
+  public emit<P>(message: MessageDefinition<P>, payload: P): this {
     this.sendToAllWidgets(message.create(payload))
+    return this
   }
 
   /**
@@ -206,13 +180,13 @@ export class TecsafeWidgetManager {
     const body = await parseCustomerJwt(this.token)
     if (!body)
       console.error(
-        '[OFCP] Failed to parse token, is the tokenFN correctly implemented?'
+        '[TECSAFE] Failed to parse token, is the tokenFN correctly implemented?'
       )
     const in60s = Date.now() + 60_000
     this.tokenTimeout = body
       ? Math.max(body.exp * 1_000 - 60_000, in60s)
       : in60s
-    this.refreshTimeoutId = setTimeout(
+    this.refreshTimeoutId = window.setTimeout(
       () => this.refreshToken(),
       this.tokenTimeout - Date.now()
     )
@@ -240,7 +214,7 @@ export class TecsafeWidgetManager {
   public async refreshToken(token?: string | null): Promise<void> {
     if (token) await this.saveToken(token)
     else token = await this.getToken(true)
-    this.sendToAllWidgets(OUT_MESSAGES.OutMessageSetToken.create(token))
+    this.sendToAllWidgets(OUT_MESSAGES.OutMessageSetToken.create({ token }))
   }
 
   /**
@@ -263,17 +237,6 @@ export class TecsafeWidgetManager {
     this.widgets.push(widget)
     widget.show()
     return widget
-  }
-
-  /**
-   * Creates a cart widget
-   * @param el The element to attach the widget to
-   * @returns The cart widget
-   */
-  public createCartWidget(el: HTMLElement): CartWidget {
-    return this.createWidget(
-      new CartWidget(this.widgetManagerConfig, el, this)
-    )
   }
 
   /**

@@ -1,0 +1,23 @@
+{
+  "entryPoints": [
+    "src/"
+  ],
+  "entryPointStrategy": "expand",
+  "plugin": ["typedoc-plugin-merge-modules"],
+  "mergeModulesMergeMode": "project",
+  "navigation": {
+    "includeCategories": true,
+  },
+  "categoryOrder": [
+    "SDK",
+    "Config",
+    "Widget",
+    "InMessage",
+    "InMessageInternal",
+    "OutMessage",
+    "MessageMap",
+    "Internal"
+  ],
+  "defaultCategory": "Internal",
+  "out": "docs"
+}

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "esModuleInterop": true,
     "isolatedModules": false,
     "target": "ESNext",
     "module": "ESNext",
@@ -7,6 +8,7 @@
     "baseUrl": "."
   },
   "exclude": [
-    "dist"
+    "dist",
+    "test"
   ]
 }

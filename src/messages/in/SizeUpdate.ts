@@ -1,11 +1,22 @@
-import { defineMessage } from "../Contract";
+import { defineMessage } from '../Contract'
 
 /**
- * Incoming request from the iframe to change the height of the iframe
+ * @categoryDescription InMessageInternal
+ * These functions are available for...
+ * @showCategories
+ * @module
  */
-export const InMessageSizeUpdate = defineMessage<number>('size-update', (e, sdk, widget) => {
-  const iframe = widget.getIframe();
-  if (iframe) {
-    iframe.style.height = `${e.event}px`;
+
+/**
+ * **The WidgetManager does handle this event under the hood by resizing the iframe.**
+ * Incoming request from the iframe to change the height of the iframe.
+ * @category InMessageInternal
+ */
+export const InMessageSizeUpdate = defineMessage<{ height: number }>(
+  'size-update',
+  (e, sdk, widget) => {
+    const iframe = widget.getIframe()
+    if (iframe) iframe.style.height = `${e.event.height}px`
+    else throw new Error('Iframe not found')
   }
-});
+)

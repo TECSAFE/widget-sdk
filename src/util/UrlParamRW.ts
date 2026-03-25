@@ -13,8 +13,8 @@ export interface WidgetManagerUrlParam {
  */
 export function writeUrlParams(params: WidgetManagerUrlParam): void {
   const url = new URL(window.location.href)
-  url.searchParams.set('x-ofcp-bid', params.browserId)
-  url.searchParams.set('x-ofcp-url', params.url)
+  url.searchParams.set('x-tecsafe-bid', params.browserId)
+  url.searchParams.set('x-tecsafe-url', params.url)
   window.history.replaceState({}, '', url.toString())
 }
 
@@ -24,8 +24,8 @@ export function writeUrlParams(params: WidgetManagerUrlParam): void {
 export function readUrlParams(): WidgetManagerUrlParam {
   const url = new URL(window.location.href)
   return {
-    browserId: url.searchParams.get('x-ofcp-bid') || '',
-    url: url.searchParams.get('x-ofcp-url') || '',
+    browserId: url.searchParams.get('x-tecsafe-bid') || '',
+    url: url.searchParams.get('x-tecsafe-url') || '',
   }
 }
 
@@ -34,7 +34,7 @@ export function readUrlParams(): WidgetManagerUrlParam {
  */
 export function clearUrlParams(): void {
   const url = new URL(window.location.href)
-  url.searchParams.delete('x-ofcp-bid')
-  url.searchParams.delete('x-ofcp-url')
+  url.searchParams.delete('x-tecsafe-bid')
+  url.searchParams.delete('x-tecsafe-url')
   window.history.replaceState({}, '', url.toString())
 }
