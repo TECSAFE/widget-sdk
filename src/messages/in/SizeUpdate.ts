@@ -1,13 +1,6 @@
 import { defineMessage } from '../Contract'
 
 /**
- * @categoryDescription InMessageInternal
- * These functions are available for...
- * @showCategories
- * @module
- */
-
-/**
  * **The WidgetManager does handle this event under the hood by resizing the iframe.**
  * Incoming request from the iframe to change the height of the iframe.
  * @category InMessageInternal

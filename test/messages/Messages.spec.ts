@@ -22,9 +22,13 @@ describe('Messages', () => {
     })
 
     it('should not be missing any message', () => {
-      const files = readdirSync(join(__dirname, '..', '..', 'src', 'messages', 'in'))
+      const files = readdirSync(
+        join(__dirname, '..', '..', 'src', 'messages', 'in')
+      )
       const messages = Object.keys(IN_MESSAGES).sort()
-      expect(messages).toEqual(files.map((file) => 'InMessage' + file.substring(0, file.length - 3)))
+      expect(messages).toEqual(
+        files.map((file) => 'InMessage' + file.substring(0, file.length - 3))
+      )
     })
   })
 
@@ -46,9 +50,15 @@ describe('Messages', () => {
     })
 
     it('should not be missing any message', () => {
-      const files = readdirSync(join(__dirname, '..', '..', 'src', 'messages', 'out'))
+      const files = readdirSync(
+        join(__dirname, '..', '..', 'src', 'messages', 'out')
+      )
       const messages = Object.keys(OUT_MESSAGES).sort()
-      expect(messages).toEqual(files.map((file) => 'OutMessage' + file.substring(0, file.length - 3)).sort())
+      expect(messages).toEqual(
+        files
+          .map((file) => 'OutMessage' + file.substring(0, file.length - 3))
+          .sort()
+      )
     })
   })
 })

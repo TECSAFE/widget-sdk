@@ -23,7 +23,9 @@ describe('UrlParamRW', () => {
 
   it('should write URL parameters correctly', () => {
     writeUrlParams({ url: 'https://test.com', browserId: 'test-id' })
-    expect(window.location.href).toContain('x-tecsafe-url=https%3A%2F%2Ftest.com')
+    expect(window.location.href).toContain(
+      'x-tecsafe-url=https%3A%2F%2Ftest.com'
+    )
     expect(window.location.href).toContain('x-tecsafe-bid=test-id')
   })
 

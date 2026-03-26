@@ -1,11 +1,20 @@
 import { TecsafeWidgetManager } from '../TecsafeWidgetSDK'
 import { WidgetManagerConfig } from './WidgetManagerConfig'
-import { MessageDefinition, WidgetMessageEvent } from '../messages/Contract'
-import { IN_MESSAGES, OUT_MESSAGES, OutMessageEnvelope } from '../messages/Messages'
+import {
+  MessageDefinition,
+  WidgetMessageEvent,
+  MessageEventHandler,
+} from '../messages/Contract'
+import {
+  IN_MESSAGES,
+  OUT_MESSAGES,
+  OutMessageEnvelope,
+} from '../messages/Messages'
 import { MessageEnvelope } from './MessageEnvelope'
 
 import { EventBus } from '../util/EventBus'
 import { IWidget } from './Context'
+import { Logger } from '../util/Logger'
 
 /**
  * Base class for all widgets, providing common functionality
@@ -40,9 +49,9 @@ export class BaseWidget extends EventBus implements IWidget {
     const iframeSrc = new URL(this.iframe.src)
     const origin = iframeSrc.origin
     if (!this.config.allowedOrigins.includes(origin)) {
-      console.error(
-        '[TECSAFE] Widget',
-        this.el,
+      Logger.getInstance().error(
+        'Widget',
+        String(this.el),
         'cannot send message to origin',
         origin
       )
@@ -78,9 +87,9 @@ export class BaseWidget extends EventBus implements IWidget {
           )
         }
 
-        this.trigger(event.data.type, event.data.payload)
+        this.trigger(event.data.type, event.data, this.api, this)
 
-        this.api._triggerListeners(event.data.type, event.data.payload, this)
+        this.api._triggerListeners(event.data.type, event.data, this)
         return
       }
     }
@@ -157,7 +166,7 @@ export class BaseWidget extends EventBus implements IWidget {
    */
   public override on<P>(
     message: MessageDefinition<P>,
-    handler: (payload: P) => void
+    handler: MessageEventHandler<P>
   ): this {
     return super.on(message, handler)
   }
@@ -170,7 +179,7 @@ export class BaseWidget extends EventBus implements IWidget {
    */
   public override once<P>(
     message: MessageDefinition<P>,
-    handler: (payload: P) => void
+    handler: MessageEventHandler<P>
   ): this {
     return super.once(message, handler)
   }
@@ -183,7 +192,7 @@ export class BaseWidget extends EventBus implements IWidget {
    */
   public override off<P>(
     message: MessageDefinition<P>,
-    handler: (payload: P) => void
+    handler: MessageEventHandler<P>
   ): this {
     return super.off(message, handler)
   }
@@ -195,7 +204,11 @@ export class BaseWidget extends EventBus implements IWidget {
    * @returns this
    */
   public emit<P>(message: MessageDefinition<P>, payload: P): this {
-    if (!(Object.values(OUT_MESSAGES).map(m => m.type).includes(message.type)))
+    if (
+      !Object.values(OUT_MESSAGES)
+        .map((m) => m.type)
+        .includes(message.type)
+    )
       throw new Error('Only outgoing messages can be emitted')
     this.sendMessage(message.create(payload) as OutMessageEnvelope)
     return this

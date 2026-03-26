@@ -2,6 +2,7 @@ import { IAppWidget } from 'src/types/Context'
 import { BaseWidget } from '../types/BaseWidget'
 
 import { writeUrlParams, clearUrlParams } from '../util/UrlParamRW'
+import { Logger } from '../util/Logger'
 
 /**
  * **The WidgetManager does handle creation and destruction of this widget under the hood.**
@@ -76,7 +77,12 @@ export class AppWidget extends BaseWidget implements IAppWidget {
     const { origin } = new URL(url)
     if (!this.config.allowedOrigins.includes(origin)) {
       this.destroy()
-      console.error('[TECSAFE] Widget', this.el, 'cannot load url', url)
+      Logger.getInstance().error(
+        'Widget',
+        String(this.el),
+        'cannot load url',
+        url
+      )
     }
   }
 

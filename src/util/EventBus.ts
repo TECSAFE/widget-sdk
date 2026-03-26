@@ -1,4 +1,7 @@
-import { MessageDefinition } from '../messages/Contract'
+import { OutMessageEnvelope } from 'src/messages/Messages'
+import { MessageDefinition, MessageEventHandler } from '../messages/Contract'
+import { MessageEnvelope } from 'src/types/MessageEnvelope'
+import { ISDK, IWidget } from 'src/types/Context'
 
 /**
  * A simple event bus that can be extended by other classes
@@ -6,7 +9,7 @@ import { MessageDefinition } from '../messages/Contract'
  * It strictly handles messages defined via MessageDefinition.
  */
 export abstract class EventBus {
-  protected listeners: Map<string, ((...args: any[]) => void)[]> = new Map()
+  protected listeners: Map<string, MessageEventHandler<any>[]> = new Map()
 
   /**
    * Listens to a message
@@ -16,7 +19,7 @@ export abstract class EventBus {
    */
   public on<P>(
     message: MessageDefinition<P>,
-    handler: (...args: any[]) => void
+    handler: MessageEventHandler<P>
   ): this {
     if (!this.listeners.has(message.type)) {
       this.listeners.set(message.type, [])
@@ -33,11 +36,11 @@ export abstract class EventBus {
    */
   public once<P>(
     message: MessageDefinition<P>,
-    handler: (...args: any[]) => void
+    handler: MessageEventHandler<P>
   ): this {
-    const onceHandler = (...args: any[]) => {
+    const onceHandler: MessageEventHandler<P> = (event, sdk, widget) => {
       this.off(message, onceHandler)
-      handler(...args)
+      handler(event, sdk, widget)
     }
     return this.on(message, onceHandler)
   }
@@ -50,7 +53,7 @@ export abstract class EventBus {
    */
   public off<P>(
     message: MessageDefinition<P>,
-    handler: (...args: any[]) => void
+    handler: MessageEventHandler<P>
   ): this {
     const listeners = this.listeners.get(message.type)
     if (listeners) {
@@ -65,15 +68,28 @@ export abstract class EventBus {
   /**
    * Triggers all listeners for a given message type
    * @param type The message type
-   * @param args The arguments to pass to the listeners
+   * @param envelope The message envelope containing the payload
+   * @param sdk The SDK instance
+   * @param widget The widget instance
    */
-  protected trigger(type: string, ...args: any[]): void {
+  protected trigger(
+    type: string,
+    envelope: MessageEnvelope<any>,
+    sdk: ISDK,
+    widget: IWidget
+  ): void {
     const listeners = this.listeners.get(type)
-    if (listeners) {
+    if (listeners)
       for (const listener of listeners) {
-        listener(...args)
+        listener(
+          {
+            event: envelope.payload,
+            respond: (message) => widget.sendMessage(message),
+          },
+          sdk,
+          widget
+        )
       }
-    }
   }
 
   /**

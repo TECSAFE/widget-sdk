@@ -1,32 +1,16 @@
 /**
- * Represents a single position in a bulk add-to-cart operation.
- */
-export type BulkPosition = {
-  linePosition: number
-  articleNumber: string
-  quantity: number
-  configurationId?: string
-}
-
-/**
- * Represents the answer for a single position in a bulk add-to-cart operation.
- */
-export type BulkPositionAnswer = {
-  linePosition: number
-  success: boolean
-}
-
-/**
  * Handler for adding a single item to the cart.
  */
 export type SingleAddToCartHandler = {
   /**
    * Adds a single item to the cart.
    *
-   * @param articleNumber - The article number of the product to add.
-   * @param quantity - The number of items to add.
-   * @param configurationId - Optional configuration ID for customized products.
+   * @param position - The position of the product in the cart.
    * @returns A promise that resolves to true if the item was successfully added, false otherwise.
+   * @see {@link InMessageAddToCart}
+   * @see {@link OutMessageAddedToCart}
+   * @see {@link BulkAddToCartHandler}
+   * @see {@link AddToCartHandler}
    */
   single: (
     articleNumber: string,
@@ -44,8 +28,24 @@ export type BulkAddToCartHandler = {
    *
    * @param bulk - An array of items to add to the cart, specifying their target line position, article number, quantity, and optional configuration ID.
    * @returns A promise that resolves to an array of objects indicating the success status for each line position.
+   * @see {@link InMessageAddToCart}
+   * @see {@link OutMessageAddedToCart}
+   * @see {@link SingleAddToCartHandler}
+   * @see {@link AddToCartHandler}
    */
-  bulk: (bulk: BulkPosition[]) => Promise<BulkPositionAnswer[]>
+  bulk: (
+    bulk: {
+      linePosition: number
+      articleNumber: string
+      quantity: number
+      configurationId?: string
+    }[]
+  ) => Promise<
+    {
+      linePosition: number
+      success: boolean
+    }[]
+  >
 }
 
 /**

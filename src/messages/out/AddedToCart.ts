@@ -1,5 +1,4 @@
 import { defineMessage } from '../Contract'
-import { BulkPositionAnswer } from '../../types/AddToCardHandler'
 
 /**
  * **The WidgetManager does handle this event under the hood via the addToCart handler in the constructor.**
@@ -8,5 +7,12 @@ import { BulkPositionAnswer } from '../../types/AddToCardHandler'
  * @see {@link InMessageAddToCart}
  */
 export const OutMessageAddedToCart = defineMessage<{
-  positions: BulkPositionAnswer[]
+  /**
+   * The line position of the product, should be the same as the line position of the InMessageAddToCart event.
+   */
+  linePosition: number
+  /**
+   * The success status of the add to cart operation
+   */
+  success: boolean
 }>('added-to-cart')

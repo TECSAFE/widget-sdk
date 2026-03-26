@@ -1,14 +1,20 @@
 import { BaseWidget } from './types/BaseWidget'
 import { WidgetManagerConfig } from './types/WidgetManagerConfig'
 import { MessageEnvelope } from './types/MessageEnvelope'
-import { MessageDefinition } from './messages/Contract'
-import { OUT_MESSAGES } from './messages/Messages'
+import { MessageDefinition, MessageEventHandler } from './messages/Contract'
+import { OUT_MESSAGES, IN_MESSAGES } from './messages/Messages'
 import { AppWidget } from './widget/AppWidget'
 import { ProductDetailWidget } from './widget/ProductDetailWidget'
+import { CustomPageWidget } from './widget/CustomPageWidget'
 import { readUrlParams, clearUrlParams } from './util/UrlParamRW'
 
 import { EventBus } from './util/EventBus'
-import { AddToCartHandler } from './types/AddToCardHandler'
+import { Logger } from './util/Logger'
+import {
+  AddToCartHandler,
+  BulkAddToCartHandler,
+  SingleAddToCartHandler,
+} from './types/AddToCardHandler'
 
 // import { parseCustomerJwt } from '@tecsafe/jwt-sdk'
 const parseCustomerJwt = (...args: any[]): any => {
@@ -23,10 +29,10 @@ export class TecsafeWidgetManager extends EventBus {
   /**
    * The main entry point for the TECSAFE Widget SDK.
    * This class should only be instantiated after the user has consented to the terms, conditions, and privacy policy!
-   * @param customerTokenCallback A function that returns the customer token as a string inside a promise
-   * @param addToCartCallback A function that adds a product to the cart, given the product ID and identifier, returning a boolean inside a promise indicating success
-   * @param widgetManagerConfig The configuration for the SDK
-   * @throws An error if the configuration is invalid
+   * @param customerTokenCallback A function that returns the customer token as a string inside a promise.
+   * @param addToCartCallback A function that adds a product to the cart, given the product details, returning a success status.
+   * @param widgetManagerConfig The configuration for the SDK.
+   * @throws An error if the configuration is invalid.
    */
   constructor(
     private readonly customerTokenCallback: () => Promise<string>,
@@ -54,14 +60,43 @@ export class TecsafeWidgetManager extends EventBus {
     if (!params.browserId) return
     if (this.browserId !== params.browserId) {
       clearUrlParams()
-      console.warn('[TECSAFE] Browser ID mismatch, clearing URL params')
+      Logger.getInstance().warn('Browser ID mismatch, clearing URL params')
       return
     }
     try {
       this.openFullScreen(params.url)
     } catch (e) {
-      console.error('[TECSAFE] Failed to open full screen:', e)
+      Logger.getInstance().error('Failed to open full screen:', String(e))
     }
+
+    this.on(IN_MESSAGES.InMessageAddToCart, async (e) => {
+      const positions = e.event.positions
+      if ('bulk' in this.addToCartCallback) {
+        const results = await (
+          this.addToCartCallback as BulkAddToCartHandler
+        ).bulk(positions)
+        results.forEach((result) => {
+          e.respond(OUT_MESSAGES.OutMessageAddedToCart.create(result))
+        })
+      } else if ('single' in this.addToCartCallback) {
+        const singleCb = this.addToCartCallback as SingleAddToCartHandler
+        await Promise.all(
+          positions.map(async (pos) => {
+            const success = await singleCb.single(
+              pos.articleNumber,
+              pos.quantity,
+              pos.configurationId
+            )
+            e.respond(
+              OUT_MESSAGES.OutMessageAddedToCart.create({
+                linePosition: pos.linePosition,
+                success,
+              })
+            )
+          })
+        )
+      }
+    })
   }
 
   private browserId: string
@@ -108,8 +143,8 @@ export class TecsafeWidgetManager extends EventBus {
    * @param message The message to send
    */
   public sendToAllWidgets(message: MessageEnvelope): void {
-    for (const widget of this.widgets) widget.sendMessage(message)
-    this.appWidget.sendMessage(message)
+    for (const widget of this.widgets) widget.sendMessage(message as any)
+    this.appWidget.sendMessage(message as any)
   }
 
   /**
@@ -120,7 +155,7 @@ export class TecsafeWidgetManager extends EventBus {
    */
   public override on<P>(
     message: MessageDefinition<P>,
-    handler: (payload: P, widget: BaseWidget) => void
+    handler: MessageEventHandler<P>
   ): this {
     return super.on(message, handler)
   }
@@ -133,7 +168,7 @@ export class TecsafeWidgetManager extends EventBus {
    */
   public override once<P>(
     message: MessageDefinition<P>,
-    handler: (payload: P, widget: BaseWidget) => void
+    handler: MessageEventHandler<P>
   ): this {
     return super.once(message, handler)
   }
@@ -146,7 +181,7 @@ export class TecsafeWidgetManager extends EventBus {
    */
   public override off<P>(
     message: MessageDefinition<P>,
-    handler: (payload: P, widget: BaseWidget) => void
+    handler: MessageEventHandler<P>
   ): this {
     return super.off(message, handler)
   }
@@ -154,8 +189,12 @@ export class TecsafeWidgetManager extends EventBus {
   /**
    * Internal method to trigger listeners from a widget
    */
-  public _triggerListeners(type: string, payload: any, widget: BaseWidget) {
-    this.trigger(type, payload, widget)
+  public _triggerListeners(
+    type: string,
+    envelope: MessageEnvelope<any>,
+    widget: BaseWidget
+  ) {
+    this.trigger(type, envelope, this, widget)
   }
 
   /**
@@ -178,10 +217,11 @@ export class TecsafeWidgetManager extends EventBus {
     if (this.refreshTimeoutId) clearTimeout(this.refreshTimeoutId)
     this.token = token
     const body = await parseCustomerJwt(this.token)
-    if (!body)
-      console.error(
-        '[TECSAFE] Failed to parse token, is the tokenFN correctly implemented?'
+    if (!body) {
+      Logger.getInstance().error(
+        'Failed to parse token, is the tokenFN correctly implemented?'
       )
+    }
     const in60s = Date.now() + 60_000
     this.tokenTimeout = body
       ? Math.max(body.exp * 1_000 - 60_000, in60s)
@@ -247,6 +287,17 @@ export class TecsafeWidgetManager extends EventBus {
   public createProductDetailWidget(el: HTMLElement): ProductDetailWidget {
     return this.createWidget(
       new ProductDetailWidget(this.widgetManagerConfig, el, this)
+    )
+  }
+
+  /**
+   * Creates a custom page widget
+   * @param el The element to attach the widget to
+   * @returns The custom page widget
+   */
+  public createCustomPageWidget(el: HTMLElement): CustomPageWidget {
+    return this.createWidget(
+      new CustomPageWidget(this.widgetManagerConfig, el, this)
     )
   }
 

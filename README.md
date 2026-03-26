@@ -2,6 +2,8 @@
 
 The TECSAFE Widget SDK provides a convenience wrapper to interact with TECSAFE Widgets, handling IFrame communication and JWT management automatically.
 
+The full API documentation can be found on [tecsafe.github.io/widget-sdk](https://tecsafe.github.io/widget-sdk).
+
 ## API Usage
 
 The Widget SDK is publicly available on npm. You can install it via npm or yarn:
@@ -83,6 +85,7 @@ When referring to the generated SDK documentation for events:
 - The **`InMessageInternal`** category can be mostly ignored, as these events are handled internally by the SDK.
 - The **`OutMessage`** category primarily contains responses or status update events that the SDK also handles internally.
 - If you are expected to respond to an event, it will be clearly stated in the description of an **`InMessage`**.
+- It is recommended to implement as many **`InMessage`** handlers as possible, to ensure the best user experience.
 
 ## Example Implementation (Vue.js)
 
@@ -127,6 +130,8 @@ When referring to the generated SDK documentation for events:
     )
 
     manager.value.createProductDetailWidget(container.value)
+    manager.value.on(InMessageRequestArticleInfo, (e) => {
+
   })
 
   onBeforeUnmount(() => {
