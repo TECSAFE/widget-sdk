@@ -16,10 +16,7 @@ import {
   SingleAddToCartHandler,
 } from './types/AddToCardHandler'
 
-const parseCustomerJwt = (...args: any[]): any => {
-  Logger.getInstance().warn('parseCustomerJwt is not implemented yet')
-  return null
-}
+import { parseCustomerJwt } from './util/ParseCustomerJwt'
 
 /**
  * The main entry point for the TECSAFE Widget SDK
@@ -30,12 +27,17 @@ export class TecsafeWidgetManager extends EventBus {
    * The main entry point for the TECSAFE Widget SDK.
    * This class should only be instantiated after the user has consented to the terms, conditions, and privacy policy!
    * @param customerTokenCallback A function that returns the customer token as a string inside a promise.
+   *                              It is expected that you implement a route in your backend, using your own auth method,
+   *                              and request a token from our backend, forwarding the oldToken if provided to ensure
+   *                              proper session upgrading.
    * @param addToCartCallback A function that adds a product to the cart, given the product details, returning a success status.
    * @param widgetManagerConfig The configuration for the SDK.
    * @throws An error if the configuration is invalid.
    */
   constructor(
-    private readonly customerTokenCallback: () => Promise<string>,
+    private readonly customerTokenCallback: (
+      oldToken?: string
+    ) => Promise<string>,
     private readonly addToCartCallback: AddToCartHandler,
     private readonly widgetManagerConfig: WidgetManagerConfig
   ) {
@@ -223,6 +225,7 @@ export class TecsafeWidgetManager extends EventBus {
   private async saveToken(token: string): Promise<string> {
     if (this.refreshTimeoutId) clearTimeout(this.refreshTimeoutId)
     this.token = token
+    localStorage.setItem('tecsafe-token', token)
     const body = await parseCustomerJwt(this.token)
     if (!body) {
       Logger.getInstance().error(
@@ -248,7 +251,8 @@ export class TecsafeWidgetManager extends EventBus {
   public async getToken(refresh = false): Promise<string> {
     if (!refresh && this.tokenTimeout > Date.now()) return this.token
     if (this.tokenPromise) return this.tokenPromise
-    this.tokenPromise = this.customerTokenCallback()
+    const oldToken = localStorage.getItem('tecsafe-token') || undefined
+    this.tokenPromise = this.customerTokenCallback(oldToken)
     const token = await this.saveToken(await this.tokenPromise)
     this.tokenPromise = null
     return token

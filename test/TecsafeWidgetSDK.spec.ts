@@ -15,9 +15,14 @@ describe('TecsafeWidgetManager', () => {
   let mockConfig: WidgetManagerConfig
 
   beforeEach(() => {
+    const testTokenBody = btoa(
+      JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })
+    )
+    const validTestToken = `header.${testTokenBody}.signature`
+
     mockTokenCallback = jest
-      .fn<() => Promise<string>>()
-      .mockResolvedValue('test-token')
+      .fn<(oldToken?: string) => Promise<string>>()
+      .mockResolvedValue(validTestToken)
     mockAddToCartCallback = jest
       .fn<() => Promise<boolean>>()
       .mockResolvedValue(true)
@@ -136,7 +141,7 @@ describe('TecsafeWidgetManager', () => {
     manager.closeFullScreen()
     expect(appWidget.hide).toHaveBeenCalled()
 
-    manager.closeFullScreen(true)
+    manager.destroyFullScreen()
     expect(appWidget.destroy).toHaveBeenCalled()
   })
 
@@ -158,16 +163,26 @@ describe('TecsafeWidgetManager', () => {
       mockAddToCartCallback,
       mockConfig
     )
-    // parseCustomerJwt throws "Not implemented" internally
-    // We catch the error to test the token getters edge-case error handling
-    try {
-      await manager.getToken()
-    } catch (e) {}
+
+    const token = await manager.getToken()
+    expect(token).toBeDefined()
+    expect(mockTokenCallback).toHaveBeenCalledWith(undefined)
 
     // getters
     manager.setFullScreenData({ foo: 'bar' })
     expect(manager.getFullScreenData()).toEqual({ foo: 'bar' })
-    expect(manager.getTokenTimeout()).toBeUndefined() // or something since saveToken failed
+    expect(manager.getTokenTimeout()).toBeGreaterThan(Date.now())
+  })
+
+  it('should pass old token if it exists in local storage', async () => {
+    window.localStorage.setItem('tecsafe-token', 'old-test-token')
+    const manager = new TecsafeWidgetManager(
+      mockTokenCallback,
+      mockAddToCartCallback,
+      mockConfig
+    )
+    await manager.getToken()
+    expect(mockTokenCallback).toHaveBeenCalledWith('old-test-token')
   })
 
   it('should handle on/once/off properly', () => {
