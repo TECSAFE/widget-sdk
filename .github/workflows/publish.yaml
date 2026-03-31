@@ -39,7 +39,7 @@ jobs:
 
       # Generate docs
       - name: Generate docs
-        run: pnpm docs
+        run: pnpm doc
 
       # Final touches
       - name: Replace version in package.json to be semver compatible
