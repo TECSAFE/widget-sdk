@@ -1,13 +1,14 @@
-import { TecsafeApi as tsApiImport } from './TecsafeApi'
+import { TecsafeWidgetManager } from './TecsafeWidgetSDK'
 
-export * from './TecsafeApi'
+export * from './TecsafeWidgetSDK'
 export * from './types/BaseWidget'
-export * from './types/messages'
-export * from './types/Config'
-export * from './types/EventType'
+export * from './types/WidgetManagerConfig'
+export * from './types/MessageEnvelope'
 export * from './util/UrlParamRW'
 export * from './widget/AppWidget'
-export * from './widget/CartWidget'
+export * from './widget/CustomPageWidget'
 export * from './widget/ProductDetailWidget'
+export * from './messages/Contract'
+export * from './messages/Messages'
 
-export default tsApiImport
+export default TecsafeWidgetManager

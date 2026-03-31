@@ -1,11 +1,16 @@
+import { IAppWidget } from 'src/types/Context'
 import { BaseWidget } from '../types/BaseWidget'
-import { MessageType } from '../types/messages'
+
 import { writeUrlParams, clearUrlParams } from '../util/UrlParamRW'
+import { Logger } from '../util/Logger'
 
 /**
+ * **The WidgetManager does handle creation and destruction of this widget under the hood.**
  * A widget that takes up the full screen, and is used to display different parts of the app.
+ * @see {@link TecsafeWidgetManager}
+ * @category Internal
  */
-export class AppWidget extends BaseWidget {
+export class AppWidget extends BaseWidget implements IAppWidget {
   /**
    * The app widget allows any origin defined in the config, so it does not have a uiPath
    * @see {@link AppWidget.setUrl} {@link AppWidget.getUrl}
@@ -22,7 +27,7 @@ export class AppWidget extends BaseWidget {
     const { origin } = new URL(url)
     if (!this.config.allowedOrigins.includes(origin)) {
       throw new Error(
-        `[OFCP] Widget ${this.el} cannot set url to origin ${origin}`
+        `[TECSAFE] Widget ${this.el} origin not allowed: ${origin}`
       )
     }
     this.url = url
@@ -64,16 +69,6 @@ export class AppWidget extends BaseWidget {
   }
 
   /**
-   * @inheritdoc
-   */
-  protected async onMessageExtended(event: MessageEvent): Promise<boolean> {
-    if (event.data.type !== MessageType.UPDATE_FULL_SCREEN_URL) return false
-    const url = event.data.payload as string
-    writeUrlParams({ browserId: this.api.getBrowserId(), url })
-    return true
-  }
-
-  /**
    * If the iframe loads a new page, stores the url in the get parameters of the parent page.
    * This ensures if a user refreshes the page, they will be taken back to the same place.
    */
@@ -82,7 +77,12 @@ export class AppWidget extends BaseWidget {
     const { origin } = new URL(url)
     if (!this.config.allowedOrigins.includes(origin)) {
       this.destroy()
-      console.error('[OFCP] Widget', this.el, 'cannot load url', url)
+      Logger.getInstance().error(
+        'Widget',
+        String(this.el),
+        'origin not allowed:',
+        origin
+      )
     }
   }
 
@@ -92,7 +92,7 @@ export class AppWidget extends BaseWidget {
   protected postShow(): void {
     if (!this.url) {
       this.destroy()
-      throw new Error(`[OFCP] Widget ${this.el} cannot show without a url`)
+      throw new Error(`[TECSAFE] Widget ${this.el} cannot show without a url`)
     }
     if (this.iframe.src !== this.url) this.iframe.src = this.url
     const style = document.body.style

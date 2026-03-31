@@ -1,29 +1,31 @@
-import { TecsafeApi } from '../TecsafeApi'
-import { SDK_VERSION } from '../util/Version'
-import { OfcpConfig } from './Config'
+import { TecsafeWidgetManager } from '../TecsafeWidgetSDK'
+import { WidgetManagerConfig } from './WidgetManagerConfig'
 import {
-  CallParentEventMessage,
-  FullScreenClosedMessage,
-  FullScreenOpenedMessage,
-  Message,
-  MessageType,
-  MetaSendDataMessage,
-  OpenFullScreenMessage,
-  PongMessage,
-  SetTokenMessage,
-  StylesSendDataMessage,
-} from './messages'
-import { SizeUpdateMessage } from './messages/SizeUpdate'
+  MessageDefinition,
+  WidgetMessageEvent,
+  MessageEventHandler,
+} from '../messages/Contract'
+import {
+  IN_MESSAGES,
+  OUT_MESSAGES,
+  OutMessageEnvelope,
+} from '../messages/Messages'
+import { MessageEnvelope } from './MessageEnvelope'
+
+import { EventBus } from '../util/EventBus'
+import { IWidget } from './Context'
+import { Logger } from '../util/Logger'
 
 /**
  * Base class for all widgets, providing common functionality
  */
-export class BaseWidget {
+export class BaseWidget extends EventBus implements IWidget {
   constructor(
-    protected readonly config: OfcpConfig,
+    protected readonly config: WidgetManagerConfig,
     protected el: HTMLElement,
-    protected readonly api: TecsafeApi
+    protected readonly api: TecsafeWidgetManager
   ) {
+    super()
     window.addEventListener('message', this.onMessage.bind(this))
   }
 
@@ -42,14 +44,14 @@ export class BaseWidget {
    * @param message The message to send
    * @returns void
    */
-  public sendMessage(message: Message): void {
+  public sendMessage(message: OutMessageEnvelope): void {
     if (!this.iframe) return
     const iframeSrc = new URL(this.iframe.src)
     const origin = iframeSrc.origin
     if (!this.config.allowedOrigins.includes(origin)) {
-      console.error(
-        '[OFCP] Widget',
-        this.el,
+      Logger.getInstance().error(
+        'Widget',
+        String(this.el),
         'cannot send message to origin',
         origin
       )
@@ -71,82 +73,25 @@ export class BaseWidget {
     if (typeof event.data !== 'object') return
     if (!event.data.type) return
 
-    switch (event.data.type) {
-      case MessageType.REQUEST_TOKEN:
-        this.sendMessage({
-          type: MessageType.SET_TOKEN,
-          payload: await this.api.getToken(),
-        } as SetTokenMessage)
-        break
+    const respond = (msg: MessageEnvelope) => this.sendMessage(msg)
 
-      case MessageType.OPEN_FULL_SCREEN:
-        const data = event.data as OpenFullScreenMessage
-        try {
-          this.api.openFullScreen(data.payload)
-        } catch (e) {
-          console.error(
-            '[OFCP] Widget',
-            this.el,
-            'failed to open full screen',
-            e
+    for (const msgDef of Object.values(
+      IN_MESSAGES
+    ) as MessageDefinition<any>[]) {
+      if (msgDef.type === event.data.type) {
+        if (msgDef.defaultHandler) {
+          await msgDef.defaultHandler(
+            { event: event.data.payload, respond },
+            this.api,
+            this
           )
         }
-        break
 
-      case MessageType.CLOSE_FULL_SCREEN:
-        this.api.closeFullScreen()
-        break
+        this.trigger(event.data.type, event.data, this.api, this)
 
-      case MessageType.DESTROY_FULL_SCREEN:
-        this.api.closeFullScreen(true)
-        break
-
-      case MessageType.STYLES_REQUEST_DATA:
-        this.sendMessage({
-          type: MessageType.STYLES_SEND_DATA,
-          payload: this.config.styles,
-        } as StylesSendDataMessage)
-        break
-
-      case MessageType.PING:
-        this.sendMessage({
-          type: MessageType.PONG,
-          payload: SDK_VERSION,
-        } as PongMessage)
-        break
-
-      case MessageType.SIZE_UPDATE:
-        this.iframe.style.height = `${
-          (event.data as SizeUpdateMessage).payload
-        }px`
-        break
-
-      case MessageType.CALL_PARENT_EVENT:
-        const callEvent = event.data as CallParentEventMessage
-        const listeners = this.api.getEventListeners()[callEvent.payload.event]
-        for (const fn of listeners) fn(...(callEvent.payload.args || []))
-        break
-
-      case MessageType.META_REQUEST_DATA:
-        this.sendMessage({
-          type: MessageType.META_SEND_DATA,
-          payload: {
-            registeredEvents: Object.keys(this.api.getEventListeners()),
-          },
-        } as MetaSendDataMessage)
-        break
-
-      case MessageType.REQUEST_FULL_SCREEN_STATE:
-        if (this.api.getAppWidget().isOpen()) {
-          this.sendMessage({
-            type: MessageType.FULL_SCREEN_OPENED,
-          } as FullScreenOpenedMessage)
-        } else {
-          this.sendMessage({
-            type: MessageType.FULL_SCREEN_CLOSED,
-          } as FullScreenClosedMessage)
-        }
-        break
+        this.api._triggerListeners(event.data.type, event.data, this)
+        return
+      }
     }
   }
 
@@ -198,7 +143,8 @@ export class BaseWidget {
   /**
    * Destroys the widget
    * @returns void
-   * @see {@link BaseWidget.preDestroy} {@link BaseWidget.postDestroy}
+   * @see {@link BaseWidget.preDestroy}
+   * @see {@link BaseWidget.postDestroy}
    */
   public destroy(): void {
     if (!this.iframe) return
@@ -206,6 +152,62 @@ export class BaseWidget {
     this.el.innerHTML = ''
     this.iframe = null
     this.postDestroy()
+  }
+
+  /**
+   * Listens to a message from the iframe
+   * @param message The message definition
+   * @param handler The handler to call when the message is received
+   * @returns this
+   */
+  public override on<P>(
+    message: MessageDefinition<P>,
+    handler: MessageEventHandler<P>
+  ): this {
+    return super.on(message, handler)
+  }
+
+  /**
+   * Listens to a message from the iframe once
+   * @param message The message definition
+   * @param handler The handler to call when the message is received
+   * @returns this
+   */
+  public override once<P>(
+    message: MessageDefinition<P>,
+    handler: MessageEventHandler<P>
+  ): this {
+    return super.once(message, handler)
+  }
+
+  /**
+   * Stops listening to a message from the iframe
+   * @param message The message definition
+   * @param handler The handler to remove
+   * @returns this
+   */
+  public override off<P>(
+    message: MessageDefinition<P>,
+    handler: MessageEventHandler<P>
+  ): this {
+    return super.off(message, handler)
+  }
+
+  /**
+   * Emits a message to the iframe
+   * @param message The message definition
+   * @param payload The payload to send
+   * @returns this
+   */
+  public emit<P>(message: MessageDefinition<P>, payload: P): this {
+    if (
+      !Object.values(OUT_MESSAGES)
+        .map((m) => m.type)
+        .includes(message.type)
+    )
+      throw new Error('Only outgoing messages can be emitted')
+    this.sendMessage(message.create(payload) as OutMessageEnvelope)
+    return this
   }
 
   /**
@@ -225,7 +227,9 @@ export class BaseWidget {
    * @returns Promise<boolean> Whether the message was handled
    * @see {@link BaseWidget.onMessage}
    */
-  protected async onMessageExtended(event: MessageEvent): Promise<boolean> {
+  protected async onMessageExtended(
+    event: WidgetMessageEvent<any>
+  ): Promise<boolean> {
     return false
   }
 
