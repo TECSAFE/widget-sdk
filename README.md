@@ -153,7 +153,7 @@ When referring to the generated SDK documentation for events:
   </head>
   <body>
     <div id="product-detail-widget"></div>
-    <script src="https://unpkg.com/@tecsafe/widget-sdk@latest/dist/index.cjs"></script>
+    <script src="https://unpkg.com/@tecsafe/widget-sdk@latest/dist/index.js"></script>
     <script>
       const manager = new TecsafeWidgetManager(
         async () => {

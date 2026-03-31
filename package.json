@@ -1,6 +1,7 @@
 {
   "name": "@tecsafe/widget-sdk",
   "repository": "https://github.com/TECSAFE/widget-sdk",
+  "homepage": "https://tecsafe.github.io/widget-sdk",
   "version": "0.0.0",
   "description": "Tecsafe Widget SDK for automated IFrame and JWT management",
   "private": false,
