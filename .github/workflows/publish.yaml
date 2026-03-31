@@ -7,16 +7,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
     steps:
       # Environment setup
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      
+
       # Install dependencies
       - name: Install pnpm
         run: npm i -g pnpm
@@ -30,16 +34,24 @@ jobs:
       # Build and test
       - name: Build
         run: pnpm build
-
       - name: Test
         run: pnpm test
-      
+
+      # Generate docs
+      - name: Generate docs
+        run: pnpm docs
+
       # Final touches
       - name: Replace version in package.json to be semver compatible
-        run: sed -i "s/IN-DEV/$(echo $GITHUB_REF | sed 's/refs\/tags\///')/" package.json
+        run: sed -i "s/0.0.0/$(echo $GITHUB_REF | sed 's/refs\/tags\///')/" package.json
 
       # Publish to registries
       - name: Publish package on GitHub
-        run: pnpm publish . --access=restricted --no-git-checks --report-summary
-        env:
-          sToken: ${{ secrets.TECSAFE_PACKAGES_READ_WRITE }}
+        run: npm publish . --access public --no-git-checks --provenance
+
+      # Publish docs to GitHub Pages
+      - name: Publish Documentation
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: docs
+          branch: docs

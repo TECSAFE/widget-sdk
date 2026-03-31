@@ -3,10 +3,17 @@
   "repository": "https://github.com/TECSAFE/widget-sdk",
   "version": "0.0.0",
   "description": "Tecsafe Widget SDK for automated IFrame and JWT management",
+  "private": false,
   "source": "src/index.ts",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
   "license": "MIT",
   "devDependencies": {
     "@jest/globals": "^29.7.0",

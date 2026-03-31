@@ -10,6 +10,6 @@ import { defineMessage } from '../Contract'
 export const InMessageDestroyFullScreen = defineMessage<void>(
   'destroy-full-screen',
   (e, sdk) => {
-    sdk.closeFullScreen(true)
+    sdk.destroyFullScreen()
   }
 )

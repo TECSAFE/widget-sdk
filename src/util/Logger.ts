@@ -1,12 +1,16 @@
 /**
+ * The log level for the TECSAFE Widget SDK.
+ */
+export type LogLevel = 'mute' | 'error' | 'warn' | 'info' | 'debug'
+
+/**
  * Internal Logger utility for the TECSAFE Widget SDK.
  * Uses a singleton pattern to manage log levels globally.
- * @internal
  */
 export class Logger {
   private static instance: Logger
   readonly prefix = '[TECSAFE]'
-  private logLevel = 'error'
+  private logLevel: LogLevel = 'error'
   private constructor() {}
 
   /**
@@ -26,7 +30,7 @@ export class Logger {
    *
    * @param logLevel - The desired logging severity level.
    */
-  setLogLevel(logLevel: 'mute' | 'error' | 'warn' | 'info' | 'debug'): void {
+  setLogLevel(logLevel: LogLevel): void {
     this.logLevel = logLevel
   }
 
@@ -80,9 +84,8 @@ export class Logger {
  * Sets the log level for the TECSAFE Widget SDK.
  *
  * @param logLevel The log level to set
+ * @category SDK
  */
-export const setTecsafeLogLevel = (
-  logLevel: 'mute' | 'error' | 'warn' | 'info' | 'debug'
-): void => {
+export const setTecsafeLogLevel = (logLevel: LogLevel): void => {
   Logger.getInstance().setLogLevel(logLevel)
 }

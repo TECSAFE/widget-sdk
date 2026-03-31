@@ -27,7 +27,7 @@ export class AppWidget extends BaseWidget implements IAppWidget {
     const { origin } = new URL(url)
     if (!this.config.allowedOrigins.includes(origin)) {
       throw new Error(
-        `[TECSAFE] Widget ${this.el} cannot set url to origin ${origin}`
+        `[TECSAFE] Widget ${this.el} origin not allowed: ${origin}`
       )
     }
     this.url = url
@@ -80,8 +80,8 @@ export class AppWidget extends BaseWidget implements IAppWidget {
       Logger.getInstance().error(
         'Widget',
         String(this.el),
-        'cannot load url',
-        url
+        'origin not allowed:',
+        origin
       )
     }
   }

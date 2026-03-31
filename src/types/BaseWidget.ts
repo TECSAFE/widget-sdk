@@ -155,10 +155,6 @@ export class BaseWidget extends EventBus implements IWidget {
   }
 
   /**
-   * Hides the widget, without destroying it
-   * @returns void
-   */
-  /**
    * Listens to a message from the iframe
    * @param message The message definition
    * @param handler The handler to call when the message is received

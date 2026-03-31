@@ -5,7 +5,9 @@ export type SingleAddToCartHandler = {
   /**
    * Adds a single item to the cart.
    *
-   * @param position - The position of the product in the cart.
+   * @param articleNumber - The article number of the product to add.
+   * @param quantity - The quantity of the product to add.
+   * @param configurationId - The configuration ID of the product to add, if not provided this is an up-selling and not a custom made product.
    * @returns A promise that resolves to true if the item was successfully added, false otherwise.
    * @see {@link InMessageAddToCart}
    * @see {@link OutMessageAddedToCart}

@@ -1,5 +1,5 @@
 import { SDK_VERSION } from '../../util/Version'
-import { defineMessage, type MessageDefinition } from '../Contract'
+import { defineMessage } from '../Contract'
 import { OutMessagePong } from '../out/Pong'
 
 /**

@@ -21,7 +21,8 @@ export interface IAppWidget extends IWidget {
  */
 export interface ISDK {
   openFullScreen(url: string): void
-  closeFullScreen(destroy?: boolean): void
+  closeFullScreen(): void
+  destroyFullScreen(): void
   getToken(refresh?: boolean): Promise<string>
   getAppWidget(): IAppWidget
   getMessageListeners(): string[]

@@ -16,7 +16,7 @@ npm install @tecsafe/widget-sdk
 
 First, initialize the `TecsafeWidgetManager`. It requires three arguments:
 
-1. `customerTokenCallback`: A function returning a promise with the customer token.
+1. `customerTokenCallback`: A function returning a promise with the customer token, which your backend needs to request from our API.
 2. `addToCartCallback`: An object implementing either a `single` or `bulk` add to cart handler.
 3. `config`: The SDK configuration containing tracking and regional settings.
 
@@ -121,12 +121,12 @@ When referring to the generated SDK documentation for events:
           return true
         },
       },
-      {
+      new WidgetManagerConfig({
         trackingAllowed: true,
         languageRFC4647: 'en-US',
         currencyCodeISO4217: 'USD',
         taxIncluded: true,
-      }
+      })
     )
 
     manager.value.createProductDetailWidget(container.value)
@@ -139,4 +139,45 @@ When referring to the generated SDK documentation for events:
     manager.value.destroyAll()
   })
 </script>
+```
+
+## Example Implementation (Pure HTML)
+
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tecsafe Widget SDK</title>
+  </head>
+  <body>
+    <div id="product-detail-widget"></div>
+    <script src="https://unpkg.com/@tecsafe/widget-sdk@latest/dist/index.cjs"></script>
+    <script>
+      const manager = new TecsafeWidgetManager(
+        async () => {
+          const response = await fetch('https://mybackend.com/tecsafe/token')
+          const json = await response.json()
+          return json.token
+        },
+        {
+          single: async (articleNumber, quantity, configurationId) => {
+            // Implementation
+            return true
+          },
+        },
+        new WidgetManagerConfig({
+          trackingAllowed: true,
+          languageRFC4647: 'en-US',
+          currencyCodeISO4217: 'USD',
+          taxIncluded: true,
+        })
+      )
+      manager.createProductDetailWidget(
+        document.getElementById('product-detail-widget')
+      )
+    </script>
+  </body>
+</html>
 ```

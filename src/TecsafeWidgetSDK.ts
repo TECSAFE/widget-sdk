@@ -16,9 +16,9 @@ import {
   SingleAddToCartHandler,
 } from './types/AddToCardHandler'
 
-// import { parseCustomerJwt } from '@tecsafe/jwt-sdk'
 const parseCustomerJwt = (...args: any[]): any => {
-  throw new Error('Not implemented')
+  Logger.getInstance().warn('parseCustomerJwt is not implemented yet')
+  return null
 }
 
 /**
@@ -125,12 +125,19 @@ export class TecsafeWidgetManager extends EventBus {
 
   /**
    * Closes the AppWidget full screen mode
-   * @param destroy If true, the widget will be destroyed instead of hidden
    * @see {@link AppWidget}
    */
-  public closeFullScreen(destroy = false): void {
-    if (!destroy) this.appWidget.hide()
-    else this.appWidget.destroy()
+  public closeFullScreen(): void {
+    this.appWidget.hide()
+    this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenClosed.create())
+  }
+
+  /**
+   * Destroys the AppWidget full screen mode
+   * @see {@link AppWidget}
+   */
+  public destroyFullScreen(): void {
+    this.appWidget.destroy()
     this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenClosed.create())
   }
 
