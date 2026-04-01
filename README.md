@@ -139,7 +139,9 @@ When a page transition occurs (e.g., leaving a product detail page), you should:
 If you used `destroyAll()`, the current `TecsafeWidgetManager` cleans up efficiently. While you _can_ recycle and reuse the manager for [`.createProductDetailWidget()`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#createProductDetailWidget) loops again later on, it is generally easier to instantiate a **new** [`TecsafeWidgetManager`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html) upon mounting the integration point again. However, if your Vue/React wrapper remains globally alive across routes, reusing the existing `.destroyAll()`-cleaned manager is perfectly fine and maintains the browser session. Tho `.destroyAll()` should not be needed for a cleanly implemented SPA which always
 cleans up behind itself, using for example `onBeforeUnmount` or `useEffect` to destroy the widget, like in the example below.
 
-## Example Implementation (Vue.js)
+## Example Implementation
+
+### Vue.js
 
 ```html
 <template>
@@ -193,7 +195,7 @@ cleans up behind itself, using for example `onBeforeUnmount` or `useEffect` to d
 </script>
 ```
 
-## Example Implementation (Pure HTML)
+### Pure HTML
 
 ```html
 <!doctype html>
@@ -208,8 +210,16 @@ cleans up behind itself, using for example `onBeforeUnmount` or `useEffect` to d
     <script src="https://unpkg.com/@tecsafe/widget-sdk@latest/dist/index.js"></script>
     <script>
       const manager = new TecsafeWidgetManager(
-        async () => {
-          const response = await fetch('https://mybackend.com/tecsafe/token')
+        async (oldToken) => {
+          const response = await fetch('https://mybackend.com/tecsafe/token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              oldToken,
+            }),
+          })
           const json = await response.json()
           return json.token
         },
