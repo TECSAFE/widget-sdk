@@ -118,8 +118,8 @@ While the SDK handles internal events (like adding to the cart using your callba
 A prime example is providing article details when the widget requests them. Advanced features like upselling and proactive price previews strictly need the article info event to function correctly. Without implementing this event, the widget will only be able to show a "Price will be calculated in the cart" placeholder.
 
 - When a widget needs to render product details or prices, it emits an [`InMessageRequestArticleInfo`](https://tecsafe.github.io/widget-sdk/variables/InMessageRequestArticleInfo.html) event.
-- Your application must listen to this event using the SDK's `.on()` methodology.
-- Once you retrieve the corresponding info from your backend or state, you respond directly using the `.respond()` function attached to the event payload.
+- Your application must listen to this event using the SDK's [`.on()`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#on) methodology.
+- Once you retrieve the corresponding info from your backend or state, you respond directly using the [`.respond()`](https://tecsafe.github.io/widget-sdk/interfaces/WidgetMessageEvent.html#respond) function attached to the event payload.
 - You MUST respond with [`OutMessageArticleInfo`](https://tecsafe.github.io/widget-sdk/variables/OutMessageArticleInfo.html), providing either the details (like name and price) or `null` if the article is missing (so the widget can quickly show fallback UI rather than timing out).
 
 ![Article Info Flow](mermaid/article-info-flow.png)
