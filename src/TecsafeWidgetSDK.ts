@@ -7,6 +7,7 @@ import { AppWidget } from './widget/AppWidget'
 import { ProductDetailWidget } from './widget/ProductDetailWidget'
 import { CustomPageWidget } from './widget/CustomPageWidget'
 import { readUrlParams, clearUrlParams } from './util/UrlParamRW'
+import { CustomerTokenCallback } from './types/CustomerTokenCallback'
 
 import { EventBus } from './util/EventBus'
 import { Logger } from './util/Logger'
@@ -35,9 +36,7 @@ export class TecsafeWidgetManager extends EventBus {
    * @throws An error if the configuration is invalid.
    */
   constructor(
-    private readonly customerTokenCallback: (
-      oldToken?: string
-    ) => Promise<string>,
+    private readonly customerTokenCallback: CustomerTokenCallback,
     private readonly addToCartCallback: AddToCartHandler,
     private readonly widgetManagerConfig: WidgetManagerConfig
   ) {

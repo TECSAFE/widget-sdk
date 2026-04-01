@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Browser as Browser (Widget SDK)
+    participant ShopUI as Browser (Shop Frontend)
+    participant ShopAPI as Shop Backend
+    participant TecsafeAPI as TECSAFE Backend
+
+    Browser->>ShopUI: Needs Token <br> (triggers customerTokenCallback)
+    Note over ShopUI,Browser: Passes oldToken if available
+    ShopUI->>ShopAPI: Request token & forward oldToken <br> via own Auth Logic
+    ShopAPI->>ShopAPI: Authenticate standard request <br> (Cookie, Auth Header, etc.)
+    ShopAPI->>TecsafeAPI: Request customerToken <br> (forward oldToken to upgrade session)
+    TecsafeAPI-->>ShopAPI: Return customerToken
+    ShopAPI-->>ShopUI: Return token to frontend
+    ShopUI-->>Browser: Resolve customerTokenCallback promise
+    Note over Browser: Stores new token <br> and manages background refresh

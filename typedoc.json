@@ -11,8 +11,8 @@
   "categoryOrder": [
     "SDK",
     "Config",
-    "Widget",
     "InMessage",
+    "Widget",
     "InMessageInternal",
     "OutMessage",
     "MessageMap",
