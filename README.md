@@ -63,8 +63,8 @@ const manager = new TecsafeWidgetManager(
 
 Use the `manager` instance to create widgets and attach them to DOM elements. This will inject
 TECSAFE iframes with the respectively requested applications. All available widgets alongside their
-pupose can be found `(@tecsafe/widgetsdk >
-Widget)[https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html]`
+pupose can be found `[@tecsafe/widgetsdk >
+Widget](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html)`
 
 ```javascript
 const pdWidget = manager.createProductDetailWidget(
@@ -79,9 +79,9 @@ We are assuming two types of users within a selaschannel:
 1. guest
 2. registered / logged in customer
 
-If a customer's login status changes you have to notify TECSAFE about that change. The (customer
+If a customer's login status changes you have to notify TECSAFE about that change. The [customer
 token
-API)[https://ofcp-api-gateway.staging.tecsafe.de/api#/Auth%20controller/AuthController_loginSaleschannelCustomer_v1]
+API](https://ofcp-api-gateway.staging.tecsafe.de/api#/Auth%20controller/AuthController_loginSaleschannelCustomer_v1)
 will ensure that guest assets will be transferred to registered accounts on login and that
 restigered customer sessions will be cleaned appropriately for a new guest session. You can update
 the token by calling the
@@ -123,8 +123,8 @@ integrating TECSAFE functionality.
 ### Event Subscription
 
 All exposed events should be subscribed to and implemented to guarantee the intended user experience
-and data integrity. Please ensure to imlpement all `(@tecsafe/widgetsdk >
-InMessages)[https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html]` accordingly.
+and data integrity. Please ensure to imlpement all `[@tecsafe/widgetsdk >
+InMessages](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html)` accordingly.
 
 
 
@@ -155,7 +155,7 @@ to their sessions. It handles both guest and registered customer sessions effici
   guest session) via your own authentication logic (e.g., checking standard cookies/headers). Once
   autheticated the beackend should aggregate additional customer data (userID, email, search tags)
   and tunnel there entire request through to **TECSAFE's backend** using
-  (/jwt/saleschannel-customer)[https://ofcp-api-gateway.staging.tecsafe.de/api#/Auth%20controller/AuthController_loginSaleschannelCustomer_v1].
+  [/jwt/saleschannel-customer](https://ofcp-api-gateway.staging.tecsafe.de/api#/Auth%20controller/AuthController_loginSaleschannelCustomer_v1).
 - Please note:
   - that your provided userID is the unique customer identifier per saleschannel. Anything else can
   be changed on each request to update the customer on the TECSAFE platform.
