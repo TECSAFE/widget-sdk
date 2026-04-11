@@ -25,14 +25,23 @@ import { parseCustomerJwt } from './util/ParseCustomerJwt'
  */
 export class TecsafeWidgetManager extends EventBus {
   /**
-   * The main entry point for the TECSAFE Widget SDK.
-   * This class should only be instantiated after the user has consented to the terms, conditions, and privacy policy!
-   * @param customerTokenCallback A function that returns the customer token as a string inside a promise.
-   *                              It is expected that you implement a route in your backend, using your own auth method,
-   *                              and request a token from our backend, forwarding the oldToken if provided to ensure
+   * The main entry point for the TECSAFE Widget SDK. This class should only be instantiated after
+   * the user has consented to the terms, conditions, and privacy policy. The SDK will not ensure
+   * GDPR complaince itself - this task is left for the implementor to intagrate into existing tools
+   * and flows.
+   * @param customerTokenCallback A function that returns the customer token as a string inside a
+   *                              promise. It is expected that you implement a route in your
+   *                              backend, using your own auth method to secure API communication,
+   *                              and request a token from the TECSAFE API
+   *                              (/jwt/saleschannel-customer)[https://ofcp-api-gateway.staging.tecsafe.de/api#/Auth%20controller/AuthController_loginSaleschannelCustomer_v1].
+   *                              This function handles initial as well as consecutive token
+   *                              creation. If a previous token exists it must be handed in for
    *                              proper session upgrading.
-   * @param addToCartCallback A function that adds a product to the cart, given the product details, returning a success status.
-   * @param widgetManagerConfig The configuration for the SDK.
+   * @param addToCartCallback A function that adds product(s) to the cart. It is left tpo the
+   * implementor to chose a single or bulk processing given their frameworks prerequisites. The
+   * function will return a success status.
+   * @param widgetManagerConfig The SDK configuration containing tracking and regional settings for
+   * customer specific app optimization.
    * @throws An error if the configuration is invalid.
    */
   constructor(
@@ -258,7 +267,10 @@ export class TecsafeWidgetManager extends EventBus {
   }
 
   /**
-   * Refreshes the token and sends it to all widgets
+   * Refreshes the token and propagates it to all widget instances. If a customer's login status
+   * changes you have to notify TECSAFE about that change. The customer token API will ensure that
+   * guest assets will be transferred to registered accounts on login and that restigered customer
+   * sessions will be cleaned appropriately for a new guest session.
    * @param token If provided, the token to use instead of fetching a new one with the tokenFN
    */
   public async refreshToken(token?: string | null): Promise<void> {
@@ -290,8 +302,11 @@ export class TecsafeWidgetManager extends EventBus {
   }
 
   /**
-   * Creates a product detail widget
+   * Creates a product detail widget.
    * @param el The element to attach the widget to
+   * @param articleNumber The articleNumber of the respectively promoted article on the PDP. Make
+   * sure to configure that article in TECSAFE's cockkpit to provide the necessary layout context.
+   * TODO: @joschua: bitte extra parameter noch korrekt einbinden
    * @returns The product detail widget
    */
   public createProductDetailWidget(el: HTMLElement): ProductDetailWidget {
@@ -301,8 +316,11 @@ export class TecsafeWidgetManager extends EventBus {
   }
 
   /**
-   * Creates a custom page widget
+   * Creates a custom page widget.
    * @param el The element to attach the widget to
+   * @param contextId A custom contextID which needs to be references in TECSAFE's cockpit to
+   * provide the necessary layout context. TODO: @joschua: bitte extra parameter noch korrekt
+   * einbinden
    * @returns The custom page widget
    */
   public createCustomPageWidget(el: HTMLElement): CustomPageWidget {

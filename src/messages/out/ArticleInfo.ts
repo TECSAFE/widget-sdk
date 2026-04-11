@@ -10,8 +10,19 @@ import { defineMessage } from '../Contract'
  */
 export const OutMessageArticleInfo = defineMessage<{
   articleNumber: string
-  info: null | {
-    name: string
-    price: string
+  info: null | {  //TODO: @joschua bitte nochmal syntax korrigieren und erweitern
+    EAN: string,
+    name: string,
+    description?: string,
+    seoKeywords?: string[],
+    price: string,
+    priceTaxIncluded: boolean,
+    lengthInMm?: number,
+    widthInMm?: number,
+    heightInMm?: number,
+    weightInGrams?: number,
+    images?: URL[],
+    media?: URL[],
+    alternatives?: <articleNumber>[],
   }
 }>('article-info')
