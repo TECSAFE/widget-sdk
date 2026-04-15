@@ -17,7 +17,7 @@ describe('ProductDetailWidget', () => {
   })
 
   it('should initialize with correct uiPath', () => {
-    const widget = new ProductDetailWidget(config, el, api)
+    const widget = new ProductDetailWidget(config, el, api, 'test-article-123')
     expect((widget as any).uiPath).toBe('product-detail')
     expect(widget).toBeDefined()
   })

@@ -5,7 +5,12 @@ import { defineMessage } from '../Contract'
  * Incoming request from the iframe to change the height of the iframe.
  * @category InMessageInternal
  */
-export const InMessageSizeUpdate = defineMessage<{ height: number }>(
+export const InMessageSizeUpdate = defineMessage<{
+  /**
+   * The height of the iframe requested by the widget in pixels
+   */
+  height: number
+}>(
   'size-update',
   (e, sdk, widget) => {
     const iframe = widget.getIframe()

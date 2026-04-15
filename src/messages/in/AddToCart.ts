@@ -7,6 +7,9 @@ import { defineMessage } from '../Contract'
  * @see {@link OutMessageAddedToCart}
  */
 export const InMessageAddToCart = defineMessage<{
+  /**
+   * The positions to add to the cart
+   */
   positions: {
     /**
      * The line position of the product in the cart, relevant to for the response to map the results.

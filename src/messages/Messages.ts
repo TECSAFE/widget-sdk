@@ -18,6 +18,7 @@ import { InMessageAddToCart } from './in/AddToCart'
 import { OutMessageArticleInfo } from './out/ArticleInfo'
 import { InMessageRequestArticleInfo } from './in/RequestArticleInfo'
 import { OutMessageAddedToCart } from './out/AddedToCart'
+import { OutMessageContextId } from './out/ContextId'
 
 /**
  * Helper type to strip the import type from a message definition.
@@ -59,6 +60,7 @@ export const _IN_MESSAGES = {
  */
 export const _OUT_MESSAGES = {
   OutMessagePong,
+  OutMessageContextId,
   OutMessageSetToken,
   OutMessageFullScreenOpened,
   OutMessageFullScreenClosed,

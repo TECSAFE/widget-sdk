@@ -27,7 +27,7 @@ export class TecsafeWidgetManager extends EventBus {
   /**
    * The main entry point for the TECSAFE Widget SDK. This class should only be instantiated after
    * the user has consented to the terms, conditions, and privacy policy. The SDK will not ensure
-   * GDPR complaince itself - this task is left for the implementor to intagrate into existing tools
+   * GDPR compliance itself - this task is left for the implementor to integrate into existing tools
    * and flows.
    * @param customerTokenCallback A function that returns the customer token as a string inside a
    *                              promise. It is expected that you implement a route in your
@@ -38,10 +38,10 @@ export class TecsafeWidgetManager extends EventBus {
    *                              creation. If a previous token exists it must be handed in for
    *                              proper session upgrading.
    * @param addToCartCallback A function that adds product(s) to the cart. It is left tpo the
-   * implementor to chose a single or bulk processing given their frameworks prerequisites. The
-   * function will return a success status.
+   *                          implementor to chose a single or bulk processing given their frameworks prerequisites. The
+   *                          function will return a success status.
    * @param widgetManagerConfig The SDK configuration containing tracking and regional settings for
-   * customer specific app optimization.
+   *                            customer specific app optimization.
    * @throws An error if the configuration is invalid.
    */
   constructor(
@@ -305,13 +305,16 @@ export class TecsafeWidgetManager extends EventBus {
    * Creates a product detail widget.
    * @param el The element to attach the widget to
    * @param articleNumber The articleNumber of the respectively promoted article on the PDP. Make
-   * sure to configure that article in TECSAFE's cockkpit to provide the necessary layout context.
-   * TODO: @joschua: bitte extra parameter noch korrekt einbinden
+   *                      sure to configure that article in TECSAFE's cockkpit to provide the
+   *                      necessary layout context.
    * @returns The product detail widget
    */
-  public createProductDetailWidget(el: HTMLElement): ProductDetailWidget {
+  public createProductDetailWidget(
+    el: HTMLElement,
+    articleNumber: string
+  ): ProductDetailWidget {
     return this.createWidget(
-      new ProductDetailWidget(this.widgetManagerConfig, el, this)
+      new ProductDetailWidget(this.widgetManagerConfig, el, this, articleNumber)
     )
   }
 
@@ -319,13 +322,12 @@ export class TecsafeWidgetManager extends EventBus {
    * Creates a custom page widget.
    * @param el The element to attach the widget to
    * @param contextId A custom contextID which needs to be references in TECSAFE's cockpit to
-   * provide the necessary layout context. TODO: @joschua: bitte extra parameter noch korrekt
-   * einbinden
+   *                  provide the necessary layout context.
    * @returns The custom page widget
    */
-  public createCustomPageWidget(el: HTMLElement): CustomPageWidget {
+  public createCustomPageWidget(el: HTMLElement, contextId?: string): CustomPageWidget {
     return this.createWidget(
-      new CustomPageWidget(this.widgetManagerConfig, el, this)
+      new CustomPageWidget(this.widgetManagerConfig, el, this, contextId)
     )
   }
 

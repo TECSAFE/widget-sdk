@@ -8,6 +8,9 @@ import { defineMessage } from '../Contract'
  * @see {@link OutMessageFullScreenOpened}
  */
 export const InMessageOpenFullScreen = defineMessage<{
+  /**
+   * The URL to open in full screen
+   */
   url: string
 }>('open-full-screen', (e, sdk) => {
   sdk.openFullScreen(e.event.url)

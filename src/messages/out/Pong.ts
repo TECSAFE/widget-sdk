@@ -7,5 +7,8 @@ import { defineMessage } from '../Contract'
  * @see {@link InMessagePing}
  */
 export const OutMessagePong = defineMessage<{
+  /**
+   * The version of the SDK
+   */
   version: string
 }>('tecsafe-pong')

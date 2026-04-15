@@ -9,6 +9,9 @@ import { OutMessagePong } from '../out/Pong'
  * @see {@link OutMessagePong}
  */
 export const InMessagePing = defineMessage<{
+  /**
+   * The version of the Widget
+   */
   version: string
 }>('tecsafe-ping', (e) => {
   e.respond(OutMessagePong.create({ version: SDK_VERSION }))

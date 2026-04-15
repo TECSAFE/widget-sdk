@@ -1,4 +1,3 @@
-import { OutMessageEnvelope } from 'src/messages/Messages'
 import { MessageDefinition, MessageEventHandler } from '../messages/Contract'
 import { MessageEnvelope } from 'src/types/MessageEnvelope'
 import { ISDK, IWidget } from 'src/types/Context'

@@ -6,4 +6,9 @@ import { defineMessage } from '../Contract'
  * @category OutMessage
  * @see {@link InMessageRequestToken}
  */
-export const OutMessageSetToken = defineMessage<{ token: string }>('set-token')
+export const OutMessageSetToken = defineMessage<{
+  /**
+   * The authentication token
+   */
+  token: string
+}>('set-token')

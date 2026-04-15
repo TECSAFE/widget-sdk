@@ -97,7 +97,7 @@ describe('TecsafeWidgetManager', () => {
       mockConfig
     )
     const el = document.createElement('div')
-    const widget = manager.createProductDetailWidget(el)
+    const widget = manager.createProductDetailWidget(el, 'test-article-123')
     expect(widget).toBeDefined()
     expect(manager.getWidgets()).toContain(widget)
   })
@@ -109,7 +109,7 @@ describe('TecsafeWidgetManager', () => {
       mockConfig
     )
     const cartEl = document.createElement('div')
-    manager.createProductDetailWidget(cartEl)
+    manager.createProductDetailWidget(cartEl, 'test-article-123')
 
     expect(manager.getWidgets().length).toBe(1)
 
