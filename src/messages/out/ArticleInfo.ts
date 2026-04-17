@@ -20,56 +20,56 @@ export const OutMessageArticleInfo = defineMessage<{
     /**
      * EAN (European Article Number) for the article
      */
-    ean: string,
+    ean: string
     /**
      * Name of the article
      */
-    name: string,
+    name: string
     /**
      * Price of the article
      */
-    price: string,
+    price: string
     /**
      * Stock of the article, if not provided the widget assumes there is unlimited stock.
      * If the stock is 0, the widget will display the article as out of stock.
      * Values < 0 are not allowed.
      */
-    stock?: number,
+    stock?: number
     /**
      * Description of the article
      */
-    description?: string,
+    description?: string
     /**
      * SEO keywords for the article
      */
-    seoKeywords?: string[],
+    seoKeywords?: string[]
     /**
      * Length in mm
      */
-    lengthInMm?: number,
+    lengthInMm?: number
     /**
      * Width in mm
      */
-    widthInMm?: number,
+    widthInMm?: number
     /**
      * Height in mm
      */
-    heightInMm?: number,
+    heightInMm?: number
     /**
      * Weight in grams
      */
-    weightInGrams?: number,
+    weightInGrams?: number
     /**
      * Product images
      */
-    images?: URL[],
+    images?: URL[]
     /**
      * Media files, e.g. product videos
      */
-    media?: URL[],
+    media?: URL[]
     /**
      * Alternative articles we can suggest to the customer, following the shop's internal article numbers
      */
-    alternativeArticleNumbers?: string[],
+    alternativeArticleNumbers?: string[]
   }
 }>('article-info')

@@ -24,7 +24,7 @@ export class ProductDetailWidget extends BaseWidget {
     protected readonly config: WidgetManagerConfig,
     protected el: HTMLElement,
     protected readonly api: TecsafeWidgetManager,
-    protected readonly articleNumber: string,
+    protected readonly articleNumber: string
   ) {
     super(config, el, api)
     this.on(InMessagePing, (e) => {

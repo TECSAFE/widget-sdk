@@ -24,12 +24,13 @@ export class CustomPageWidget extends BaseWidget {
     protected readonly config: WidgetManagerConfig,
     protected el: HTMLElement,
     protected readonly api: TecsafeWidgetManager,
-    protected readonly contextId?: string,
+    protected readonly contextId?: string
   ) {
     super(config, el, api)
-    if (this.contextId) this.on(InMessagePing, (e) => {
-      e.respond(OutMessageContextId.create({ contextId: this.contextId }))
-    })
+    if (this.contextId)
+      this.on(InMessagePing, (e) => {
+        e.respond(OutMessageContextId.create({ contextId: this.contextId }))
+      })
   }
 
   /**

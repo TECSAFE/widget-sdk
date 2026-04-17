@@ -325,7 +325,10 @@ export class TecsafeWidgetManager extends EventBus {
    *                  provide the necessary layout context.
    * @returns The custom page widget
    */
-  public createCustomPageWidget(el: HTMLElement, contextId?: string): CustomPageWidget {
+  public createCustomPageWidget(
+    el: HTMLElement,
+    contextId?: string
+  ): CustomPageWidget {
     return this.createWidget(
       new CustomPageWidget(this.widgetManagerConfig, el, this, contextId)
     )

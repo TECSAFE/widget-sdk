@@ -20,7 +20,6 @@ import { Logger } from '../util/Logger'
  * Base class for all widgets, providing common functionality
  */
 export class BaseWidget extends EventBus implements IWidget {
-
   /**
    * Creates a new BaseWidget, not recommended to use directly, use the widget manager instead
    * @see {@link TecsafeWidgetManager.createCustomPageWidget}
@@ -31,7 +30,7 @@ export class BaseWidget extends EventBus implements IWidget {
   constructor(
     protected readonly config: WidgetManagerConfig,
     protected el: HTMLElement,
-    protected readonly api: TecsafeWidgetManager,
+    protected readonly api: TecsafeWidgetManager
   ) {
     super()
     window.addEventListener('message', this.onMessage.bind(this))
@@ -245,45 +244,45 @@ export class BaseWidget extends EventBus implements IWidget {
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.show}
    */
-  protected preShow(): void { }
+  protected preShow(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.show}
    */
-  protected postShow(): void { }
+  protected postShow(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.show}
    */
-  protected preCreate(): void { }
+  protected preCreate(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.show}
    */
-  protected postCreate(): void { }
+  protected postCreate(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.destroy}
    */
-  protected preDestroy(): void { }
+  protected preDestroy(): void {}
 
   /**
    * Lifecycle hook for extending classes
    * @see {@link BaseWidget.destroy}
    */
-  protected postDestroy(): void { }
+  protected postDestroy(): void {}
 
   /**
    * Lifecycle hook for extending classes
    */
-  protected preHide(): void { }
+  protected preHide(): void {}
 
   /**
    * Lifecycle hook for extending classes
    */
-  protected postHide(): void { }
+  protected postHide(): void {}
 }
