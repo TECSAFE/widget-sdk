@@ -4,7 +4,7 @@ import { OutMessageSetToken } from '../out/SetToken'
 /**
  * **The WidgetManager does handle this event under the hood by sending the SetToken message.**
  * Incoming request from the iframe to receive the authentication token.
- * @category InMessageInternal
+ * @category InternalInMessage
  * @see {@link OutMessageSetToken}
  */
 export const InMessageRequestToken = defineMessage<void>(

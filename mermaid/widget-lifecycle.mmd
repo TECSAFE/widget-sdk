@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant User
+    participant Shop as Shop Frontend
+    participant Manager as Widget Manager
+
+    User->>Shop: 1. Enters Product Page
+    Shop->>Manager: Instantiate TecsafeWidgetManager
+    Shop->>Manager: .createProductDetailWidget()
+    Note over Manager: Widget is active and displayed
+
+    User->>Shop: 2. Navigates to another Product Page
+    Shop->>Manager: .destroy() on old widget <br> or <br> .destroyAll() on manager <br> depending on implementation
+    Shop->>Manager: .createProductDetailWidget()
+    Note over Manager: New widget replaces the old one
+
+    User->>Shop: 3. Clicks Login
+    Shop->>Shop: Shows modal and completes async login
+    Shop->>Manager: .refreshToken()
+    Note over Manager: Updates configuration session in background
+
+    User->>Shop: 4. Clicks Logout
+    Shop->>Shop: Completes async logout
+    Shop->>Manager: .refreshToken()
+    Note over Manager: Downgrades back to a guest session
+
+    User->>Shop: 5. Leaves Shop (e.g. goes to Checkout)
+    Shop->>Manager: .destroyAll()
+    Note over Manager: Cleans up all timeouts and memory

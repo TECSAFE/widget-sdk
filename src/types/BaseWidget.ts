@@ -20,6 +20,13 @@ import { Logger } from '../util/Logger'
  * Base class for all widgets, providing common functionality
  */
 export class BaseWidget extends EventBus implements IWidget {
+  /**
+   * Creates a new BaseWidget, not recommended to use directly, use the widget manager instead
+   * @see {@link TecsafeWidgetManager.createCustomPageWidget}
+   * @param config The widget manager configuration
+   * @param el The element to attach the widget to
+   * @param api The widget manager API
+   */
   constructor(
     protected readonly config: WidgetManagerConfig,
     protected el: HTMLElement,

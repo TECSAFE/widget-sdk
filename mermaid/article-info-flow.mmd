@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Widget as TECSAFE IFrame
+    participant SDK as Widget SDK
+    participant ShopUI as Shop Frontend
+
+    Widget->>SDK: Needs Article Name and Price
+    SDK->>ShopUI: Emit InMessageRequestArticleInfo
+    Note over ShopUI: Fetch product data via your API
+    ShopUI-->>SDK: e.respond with OutMessageArticleInfo
+    SDK-->>Widget: Provide info or null fallback
+    Note over Widget: Widget renders product text

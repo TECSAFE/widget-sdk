@@ -3,7 +3,12 @@ import { defineMessage } from '../Contract'
 /**
  * **The WidgetManager does handle this event under the hood if a request-token event is received from an iframe.**
  * Outgoing message to send the authentication token to the iframe.
- * @category OutMessage
+ * @category InternalOutMessage
  * @see {@link InMessageRequestToken}
  */
-export const OutMessageSetToken = defineMessage<{ token: string }>('set-token')
+export const OutMessageSetToken = defineMessage<{
+  /**
+   * The authentication token
+   */
+  token: string
+}>('set-token')

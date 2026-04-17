@@ -1,5 +1,7 @@
 /**
- * Handler for adding a single item to the cart.
+ * Handler for adding a single item to the cart. It assumes that TECSAFE layout articles as well as
+ * saleschannel native articles can be handed over, e.g. when item-lists have been selected by
+ * customer for upselling.
  */
 export type SingleAddToCartHandler = {
   /**
@@ -22,7 +24,9 @@ export type SingleAddToCartHandler = {
 }
 
 /**
- * Handler for adding multiple items to the cart in bulk.
+ * Handler for adding multiple items to the cart in bulk. It assumes that TECSAFE layout articles as
+ * well as saleschannel native articles can be handed over, e.g. when item-lists have been selected
+ * by customer for upselling.
  */
 export type BulkAddToCartHandler = {
   /**

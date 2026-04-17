@@ -3,7 +3,7 @@ import { defineMessage } from '../Contract'
 /**
  * **The WidgetManager does handle this event under the hood by destroying the AppWidget.**
  * Incoming request from the iframe to destroy the full screen ui (aka AppWidget).
- * @category InMessageInternal
+ * @category InternalInMessage
  * @see {@link AppWidget}
  * @see {@link OutMessageFullScreenClosed}
  */

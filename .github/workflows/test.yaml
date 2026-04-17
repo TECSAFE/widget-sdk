@@ -37,6 +37,8 @@ jobs:
         run: pnpm lint
       - name: Test
         run: pnpm test
+      - name: Check Mermaid PNGs
+        run: node build-mermaid.mjs --check
 
       # Fail if linting fails
       - name: Fail if linting fails

@@ -3,19 +3,21 @@
     "src/"
   ],
   "entryPointStrategy": "expand",
-  "plugin": ["typedoc-plugin-merge-modules"],
+  "plugin": [
+    "typedoc-plugin-merge-modules"
+  ],
   "mergeModulesMergeMode": "project",
   "navigation": {
     "includeCategories": true,
   },
   "categoryOrder": [
     "SDK",
-    "Config",
-    "Widget",
     "InMessage",
-    "InMessageInternal",
     "OutMessage",
-    "MessageMap",
+    "Widget",
+    "InternalInMessage",
+    "InternalOutMessage",
+    "InternalMessageMap",
     "Internal"
   ],
   "defaultCategory": "Internal",

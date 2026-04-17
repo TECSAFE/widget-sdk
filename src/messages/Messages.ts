@@ -18,6 +18,7 @@ import { InMessageAddToCart } from './in/AddToCart'
 import { OutMessageArticleInfo } from './out/ArticleInfo'
 import { InMessageRequestArticleInfo } from './in/RequestArticleInfo'
 import { OutMessageAddedToCart } from './out/AddedToCart'
+import { OutMessageContextId } from './out/ContextId'
 
 /**
  * Helper type to strip the import type from a message definition.
@@ -38,7 +39,7 @@ export type MapStripImport<T> = {
 
 /**
  * The map of all incoming messages
- * @category MessageMap
+ * @category InternalMessageMap
  */
 export const _IN_MESSAGES = {
   InMessageAddToCart,
@@ -55,10 +56,11 @@ export const _IN_MESSAGES = {
 
 /**
  * The map of all outgoing messages
- * @category MessageMap
+ * @category InternalMessageMap
  */
 export const _OUT_MESSAGES = {
   OutMessagePong,
+  OutMessageContextId,
   OutMessageSetToken,
   OutMessageFullScreenOpened,
   OutMessageFullScreenClosed,
@@ -70,37 +72,37 @@ export const _OUT_MESSAGES = {
 /**
  * Re-export to resolve compiler quirks.
  * @see _IN_MESSAGES
- * @category MessageMap
+ * @category InternalMessageMap
  */
 export const IN_MESSAGES: MapStripImport<typeof _IN_MESSAGES> = _IN_MESSAGES
 
 /**
  * Re-export to resolve compiler quirks.
  * @see _OUT_MESSAGES
- * @category MessageMap
+ * @category InternalMessageMap
  */
 export const OUT_MESSAGES: MapStripImport<typeof _OUT_MESSAGES> = _OUT_MESSAGES
 
 /**
  * The type of all incoming messages
- * @category MessageMap
+ * @category InternalMessageMap
  */
 export type InMessage = (typeof IN_MESSAGES)[keyof typeof IN_MESSAGES]
 
 /**
  * The type of all outgoing messages
- * @category MessageMap
+ * @category InternalMessageMap
  */
 export type OutMessage = (typeof OUT_MESSAGES)[keyof typeof OUT_MESSAGES]
 
 /**
  * The type of all incoming message envelopes
- * @category MessageMap
+ * @category InternalMessageMap
  */
 export type InMessageEnvelope = ReturnType<InMessage['create']>
 
 /**
  * The type of all outgoing message envelopes
- * @category MessageMap
+ * @category InternalMessageMap
  */
 export type OutMessageEnvelope = ReturnType<OutMessage['create']>
