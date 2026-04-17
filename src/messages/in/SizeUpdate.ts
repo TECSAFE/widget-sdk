@@ -3,7 +3,7 @@ import { defineMessage } from '../Contract'
 /**
  * **The WidgetManager does handle this event under the hood by resizing the iframe.**
  * Incoming request from the iframe to change the height of the iframe.
- * @category InMessageInternal
+ * @category InternalInMessage
  */
 export const InMessageSizeUpdate = defineMessage<{
   /**

@@ -1,7 +1,6 @@
 /**
  * Required configuration properties for the Widget Manager.
  * See the {@link WidgetManagerConfig} for the full configuration.
- * @category Config
  */
 export class RequiredWidgetManagerConfig {
   /**
@@ -26,7 +25,7 @@ export class RequiredWidgetManagerConfig {
 /**
  * The main configuration class for the Widget Manager.
  * Containing both required and optional configuration properties.
- * @category Config
+ * @category SDK
  */
 export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
   /**

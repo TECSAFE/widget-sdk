@@ -4,7 +4,7 @@ import { OutMessageSetMetaData } from '../out/SetMetaData'
 /**
  * **The WidgetManager does handle this event under the hood by sending the SetMetaData message.**
  * Incoming message to request meta data from the SDK.
- * @category InMessageInternal
+ * @category InternalInMessage
  * @see {@link OutMessageSetMetaData}
  */
 export const InMessageRequestMetaData = defineMessage<void>(

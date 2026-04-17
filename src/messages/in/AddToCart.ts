@@ -3,7 +3,7 @@ import { defineMessage } from '../Contract'
 /**
  * **The WidgetManager does handle this event under the hood via the addToCart handler in the constructor.**
  * Incoming request from the iframe to add items to the cart.
- * @category InMessageInternal
+ * @category InternalInMessage
  * @see {@link OutMessageAddedToCart}
  */
 export const InMessageAddToCart = defineMessage<{

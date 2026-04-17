@@ -5,7 +5,7 @@ import { OutMessageFullScreenClosed } from '../out/FullScreenClosed'
 /**
  * **The WidgetManager does handle this event under the hood by sending the FullScreenOpened or FullScreenClosed message.**
  * Incoming request from the iframe to receive the current full screen state.
- * @category InMessageInternal
+ * @category InternalInMessage
  * @see {@link OutMessageFullScreenOpened}
  * @see {@link OutMessageFullScreenClosed}
  */

@@ -3,7 +3,7 @@ import { defineMessage } from '../Contract'
 /**
  * **The WidgetManager does handle this event under the hood if a request-meta-data event is received from an iframe.**
  * Outgoing message to send the meta data to the iframe.
- * @category OutMessage
+ * @category InternalOutMessage
  * @see {@link InMessageRequestMetaData}
  */
 export const OutMessageSetMetaData = defineMessage<{
