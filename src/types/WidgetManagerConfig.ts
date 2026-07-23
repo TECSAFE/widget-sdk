@@ -48,6 +48,7 @@ export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
    * A list of allowed origins for the SDK to communicate with
    */
   public allowedOrigins: string[] = [
+    'app-ui.tecsafe.de',
     'tecsafe.github.io',
     'tecsafe.de',
     'editor.tecsafe.de',
