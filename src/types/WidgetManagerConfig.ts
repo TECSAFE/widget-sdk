@@ -7,19 +7,19 @@ export class RequiredWidgetManagerConfig {
    * Will activate customer tracking. Make sure to request tracking consent from your customer and
    * set accordingly.
    */
-  public trackingAllowed: boolean
+  public trackingAllowed!: boolean
   /**
    * The RFC 4647 language tag representing the user's preferred language, e.g. "en-US"
    */
-  public languageRFC4647: string
+  public languageRFC4647!: string
   /**
    * The ISO 4217 currency code, e.g. "USD"
    */
-  public currencyCodeISO4217: string
+  public currencyCodeISO4217!: string
   /**
    * Whether tax is included in the prices. Required to display correct pricing info - gross/net.
    */
-  public taxIncluded: boolean
+  public taxIncluded!: boolean
 }
 
 /**
@@ -42,12 +42,21 @@ export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
   /**
    * The base URL for the widget UIs
    */
-  public widgetBaseURL: string = 'https://tecsafe.github.io/app-ui/iframe' // TODO: update to live page
+  public widgetBaseURL: string = 'https://app-ui.tecsafe.de/iframe'
 
   /**
    * A list of allowed origins for the SDK to communicate with
    */
-  public allowedOrigins: string[] = ['https://tecsafe.github.io'] // TODO: update to live page
+  public allowedOrigins: string[] = [
+    'app-ui.tecsafe.de',
+    'tecsafe.github.io',
+    'tecsafe.de',
+    'editor.tecsafe.de',
+    'ofcp-editor.stage.tecsafe.de',
+    'ofcp-editor.testing.tecsafe.de',
+    'ofcp-editor.tecsafe-local.de',
+    'example.com',
+  ] // TODO: update to live page
 
   /**
    * Iframe styles.transition property

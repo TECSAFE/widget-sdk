@@ -8,6 +8,13 @@ import {
 } from '@jest/globals'
 import { TecsafeWidgetManager } from '../src/TecsafeWidgetSDK'
 import { WidgetManagerConfig } from '../src/types/WidgetManagerConfig'
+import { IN_MESSAGES } from '../src/messages/Messages'
+import type {
+  SingleAddToCartHandler,
+  BulkAddToCartHandler,
+  AddToCartHandler,
+  CustomerTokenCallback,
+} from '../src'
 
 describe('TecsafeWidgetManager', () => {
   let mockTokenCallback: any
@@ -208,5 +215,117 @@ describe('TecsafeWidgetManager', () => {
       .mockImplementation(() => {})
     manager.emit({ type: 'test', create: () => ({}) } as any, {})
     expect(spy).toHaveBeenCalled()
+  })
+
+  describe('add-to-cart handling', () => {
+    const positions = [
+      {
+        linePosition: 1,
+        articleNumber: 'ART-1',
+        quantity: 2,
+        configurationId: 'cfg-1',
+      },
+      { linePosition: 2, articleNumber: 'ART-2', quantity: 1 },
+    ]
+
+    const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+    it('registers the add-to-cart listener even without tecsafe url params', () => {
+      const manager = new TecsafeWidgetManager(
+        mockTokenCallback,
+        mockAddToCartCallback,
+        mockConfig
+      )
+      expect(manager.getMessageListeners()).toContain('add-to-cart')
+    })
+
+    it('calls the single handler per position and responds per position', async () => {
+      const single = jest
+        .fn<
+          (
+            articleNumber: string,
+            quantity: number,
+            configurationId?: string
+          ) => Promise<boolean>
+        >()
+        .mockResolvedValue(true)
+      const manager = new TecsafeWidgetManager(
+        mockTokenCallback,
+        { single },
+        mockConfig
+      )
+      const widget = { sendMessage: jest.fn() } as any
+
+      manager._triggerListeners(
+        'add-to-cart',
+        IN_MESSAGES.InMessageAddToCart.create({ positions }),
+        widget
+      )
+      await flushAsync()
+
+      expect(single).toHaveBeenCalledTimes(2)
+      expect(single).toHaveBeenNthCalledWith(1, 'ART-1', 2, 'cfg-1')
+      expect(single).toHaveBeenNthCalledWith(2, 'ART-2', 1, undefined)
+      expect(widget.sendMessage).toHaveBeenCalledWith({
+        type: 'added-to-cart',
+        payload: { linePosition: 1, success: true },
+      })
+      expect(widget.sendMessage).toHaveBeenCalledWith({
+        type: 'added-to-cart',
+        payload: { linePosition: 2, success: true },
+      })
+    })
+
+    it('calls the bulk handler once with all positions and responds per result', async () => {
+      const bulk = jest
+        .fn<
+          (
+            items: {
+              linePosition: number
+              articleNumber: string
+              quantity: number
+              configurationId?: string
+            }[]
+          ) => Promise<{ linePosition: number; success: boolean }[]>
+        >()
+        .mockResolvedValue([
+          { linePosition: 1, success: true },
+          { linePosition: 2, success: false },
+        ])
+      const manager = new TecsafeWidgetManager(
+        mockTokenCallback,
+        { bulk },
+        mockConfig
+      )
+      const widget = { sendMessage: jest.fn() } as any
+
+      manager._triggerListeners(
+        'add-to-cart',
+        IN_MESSAGES.InMessageAddToCart.create({ positions }),
+        widget
+      )
+      await flushAsync()
+
+      expect(bulk).toHaveBeenCalledTimes(1)
+      expect(bulk).toHaveBeenCalledWith(positions)
+      expect(widget.sendMessage).toHaveBeenCalledWith({
+        type: 'added-to-cart',
+        payload: { linePosition: 1, success: true },
+      })
+      expect(widget.sendMessage).toHaveBeenCalledWith({
+        type: 'added-to-cart',
+        payload: { linePosition: 2, success: false },
+      })
+    })
+
+    it('exposes the handler types via the package entrypoint', () => {
+      const single: SingleAddToCartHandler = { single: async () => true }
+      const bulk: BulkAddToCartHandler = { bulk: async () => [] }
+      const either: AddToCartHandler = single
+      const tokenCb: CustomerTokenCallback = async () => 'token'
+      expect('single' in either).toBe(true)
+      expect(typeof bulk.bulk).toBe('function')
+      expect(typeof tokenCb).toBe('function')
+    })
   })
 })

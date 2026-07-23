@@ -11,11 +11,7 @@ import { CustomerTokenCallback } from './types/CustomerTokenCallback'
 
 import { EventBus } from './util/EventBus'
 import { Logger } from './util/Logger'
-import {
-  AddToCartHandler,
-  BulkAddToCartHandler,
-  SingleAddToCartHandler,
-} from './types/AddToCardHandler'
+import { AddToCartHandler } from './types/AddToCartHandler'
 
 import { parseCustomerJwt } from './util/ParseCustomerJwt'
 
@@ -59,40 +55,18 @@ export class TecsafeWidgetManager extends EventBus {
       document.createElement('div'),
       this
     )
-    // To don't make it to obvious thats a "browserID"
-    // We shorten it to "bid"
-    this.browserId = localStorage.getItem('tecsafe-bid')
-    if (!this.browserId) {
-      this.browserId = Math.random().toString(36).slice(2)
-      localStorage.setItem('tecsafe-bid', this.browserId)
-    }
-    const params = readUrlParams()
-    if (!params.browserId) return
-    if (this.browserId !== params.browserId) {
-      clearUrlParams()
-      Logger.getInstance().warn('Browser ID mismatch, clearing URL params')
-      return
-    }
-    try {
-      this.openFullScreen(params.url)
-    } catch (e) {
-      Logger.getInstance().error('Failed to open full screen:', String(e))
-    }
-
     this.on(IN_MESSAGES.InMessageAddToCart, async (e) => {
+      const handler = this.addToCartCallback
       const positions = e.event.positions
-      if ('bulk' in this.addToCartCallback) {
-        const results = await (
-          this.addToCartCallback as BulkAddToCartHandler
-        ).bulk(positions)
+      if ('bulk' in handler) {
+        const results = await handler.bulk(positions)
         results.forEach((result) => {
           e.respond(OUT_MESSAGES.OutMessageAddedToCart.create(result))
         })
-      } else if ('single' in this.addToCartCallback) {
-        const singleCb = this.addToCartCallback as SingleAddToCartHandler
+      } else {
         await Promise.all(
           positions.map(async (pos) => {
-            const success = await singleCb.single(
+            const success = await handler.single(
               pos.articleNumber,
               pos.quantity,
               pos.configurationId
@@ -107,13 +81,32 @@ export class TecsafeWidgetManager extends EventBus {
         )
       }
     })
+    // To don't make it to obvious thats a "browserID"
+    // We shorten it to "bid"
+    this.browserId =
+      localStorage.getItem('tecsafe-bid') ?? Math.random().toString(36).slice(2)
+    if (!localStorage.getItem('tecsafe-bid')) {
+      localStorage.setItem('tecsafe-bid', this.browserId)
+    }
+    const params = readUrlParams()
+    if (!params.browserId) return
+    if (this.browserId !== params.browserId) {
+      clearUrlParams()
+      Logger.getInstance().warn('Browser ID mismatch, clearing URL params')
+      return
+    }
+    try {
+      this.openFullScreen(params.url)
+    } catch (e) {
+      Logger.getInstance().error('Failed to open full screen:', String(e))
+    }
   }
 
-  private browserId: string
+  private browserId!: string
   private widgets: BaseWidget[] = []
-  private appWidget: AppWidget
-  private token: string
-  private tokenTimeout: number
+  private appWidget!: AppWidget
+  private token!: string
+  private tokenTimeout!: number
   private tokenPromise: Promise<string> | null = null
   private refreshTimeoutId: number | null = null
   private fullScreenData: any
@@ -151,10 +144,6 @@ export class TecsafeWidgetManager extends EventBus {
     this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenClosed.create())
   }
 
-  /**
-   * Sends a message to all widgets
-   * @param message The message to send
-   */
   /**
    * Sends a message to all widgets
    * @param message The message to send
