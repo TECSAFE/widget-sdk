@@ -59,26 +59,6 @@ export class TecsafeWidgetManager extends EventBus {
       document.createElement('div'),
       this
     )
-    // To don't make it to obvious thats a "browserID"
-    // We shorten it to "bid"
-    this.browserId = localStorage.getItem('tecsafe-bid')
-    if (!this.browserId) {
-      this.browserId = Math.random().toString(36).slice(2)
-      localStorage.setItem('tecsafe-bid', this.browserId)
-    }
-    const params = readUrlParams()
-    if (!params.browserId) return
-    if (this.browserId !== params.browserId) {
-      clearUrlParams()
-      Logger.getInstance().warn('Browser ID mismatch, clearing URL params')
-      return
-    }
-    try {
-      this.openFullScreen(params.url)
-    } catch (e) {
-      Logger.getInstance().error('Failed to open full screen:', String(e))
-    }
-
     this.on(IN_MESSAGES.InMessageAddToCart, async (e) => {
       const positions = e.event.positions
       if ('bulk' in this.addToCartCallback) {
@@ -107,6 +87,25 @@ export class TecsafeWidgetManager extends EventBus {
         )
       }
     })
+    // To don't make it to obvious thats a "browserID"
+    // We shorten it to "bid"
+    this.browserId = localStorage.getItem('tecsafe-bid')
+    if (!this.browserId) {
+      this.browserId = Math.random().toString(36).slice(2)
+      localStorage.setItem('tecsafe-bid', this.browserId)
+    }
+    const params = readUrlParams()
+    if (!params.browserId) return
+    if (this.browserId !== params.browserId) {
+      clearUrlParams()
+      Logger.getInstance().warn('Browser ID mismatch, clearing URL params')
+      return
+    }
+    try {
+      this.openFullScreen(params.url)
+    } catch (e) {
+      Logger.getInstance().error('Failed to open full screen:', String(e))
+    }
   }
 
   private browserId: string
