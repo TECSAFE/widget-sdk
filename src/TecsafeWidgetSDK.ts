@@ -15,7 +15,7 @@ import {
   AddToCartHandler,
   BulkAddToCartHandler,
   SingleAddToCartHandler,
-} from './types/AddToCardHandler'
+} from './types/AddToCartHandler'
 
 import { parseCustomerJwt } from './util/ParseCustomerJwt'
 
