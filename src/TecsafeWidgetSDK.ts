@@ -83,7 +83,8 @@ export class TecsafeWidgetManager extends EventBus {
     })
     // To don't make it to obvious thats a "browserID"
     // We shorten it to "bid"
-    this.browserId = localStorage.getItem('tecsafe-bid') ?? Math.random().toString(36).slice(2)
+    this.browserId =
+      localStorage.getItem('tecsafe-bid') ?? Math.random().toString(36).slice(2)
     if (!localStorage.getItem('tecsafe-bid')) {
       localStorage.setItem('tecsafe-bid', this.browserId)
     }
