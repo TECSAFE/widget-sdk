@@ -7,19 +7,19 @@ export class RequiredWidgetManagerConfig {
    * Will activate customer tracking. Make sure to request tracking consent from your customer and
    * set accordingly.
    */
-  public trackingAllowed: boolean
+  public trackingAllowed!: boolean
   /**
    * The RFC 4647 language tag representing the user's preferred language, e.g. "en-US"
    */
-  public languageRFC4647: string
+  public languageRFC4647!: string
   /**
    * The ISO 4217 currency code, e.g. "USD"
    */
-  public currencyCodeISO4217: string
+  public currencyCodeISO4217!: string
   /**
    * Whether tax is included in the prices. Required to display correct pricing info - gross/net.
    */
-  public taxIncluded: boolean
+  public taxIncluded!: boolean
 }
 
 /**

@@ -15,7 +15,7 @@ export class AppWidget extends BaseWidget implements IAppWidget {
    * The app widget allows any origin defined in the config, so it does not have a uiPath
    * @see {@link AppWidget.setUrl} {@link AppWidget.getUrl}
    */
-  protected url: string
+  protected url!: string
 
   /**
    * Sets the url of the widget
@@ -73,7 +73,9 @@ export class AppWidget extends BaseWidget implements IAppWidget {
    * This ensures if a user refreshes the page, they will be taken back to the same place.
    */
   protected handlePageLoad(): void {
-    const url = this.iframe.contentWindow.location.href
+    const iframe = this.iframe
+    if (!iframe?.contentWindow) return
+    const url = iframe.contentWindow.location.href
     const { origin } = new URL(url)
     if (!this.config.allowedOrigins.includes(origin)) {
       this.destroy()
@@ -90,6 +92,7 @@ export class AppWidget extends BaseWidget implements IAppWidget {
    * @inheritdoc
    */
   protected postShow(): void {
+    if (!this.iframe) return
     if (!this.url) {
       this.destroy()
       throw new Error(`[TECSAFE] Widget ${this.el} cannot show without a url`)

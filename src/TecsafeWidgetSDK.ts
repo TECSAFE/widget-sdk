@@ -83,9 +83,8 @@ export class TecsafeWidgetManager extends EventBus {
     })
     // To don't make it to obvious thats a "browserID"
     // We shorten it to "bid"
-    this.browserId = localStorage.getItem('tecsafe-bid')
-    if (!this.browserId) {
-      this.browserId = Math.random().toString(36).slice(2)
+    this.browserId = localStorage.getItem('tecsafe-bid') ?? Math.random().toString(36).slice(2)
+    if (!localStorage.getItem('tecsafe-bid')) {
       localStorage.setItem('tecsafe-bid', this.browserId)
     }
     const params = readUrlParams()
@@ -102,11 +101,11 @@ export class TecsafeWidgetManager extends EventBus {
     }
   }
 
-  private browserId: string
+  private browserId!: string
   private widgets: BaseWidget[] = []
-  private appWidget: AppWidget
-  private token: string
-  private tokenTimeout: number
+  private appWidget!: AppWidget
+  private token!: string
+  private tokenTimeout!: number
   private tokenPromise: Promise<string> | null = null
   private refreshTimeoutId: number | null = null
   private fullScreenData: any
