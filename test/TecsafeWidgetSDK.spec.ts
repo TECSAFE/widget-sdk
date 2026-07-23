@@ -9,6 +9,12 @@ import {
 import { TecsafeWidgetManager } from '../src/TecsafeWidgetSDK'
 import { WidgetManagerConfig } from '../src/types/WidgetManagerConfig'
 import { IN_MESSAGES } from '../src/messages/Messages'
+import type {
+  SingleAddToCartHandler,
+  BulkAddToCartHandler,
+  AddToCartHandler,
+  CustomerTokenCallback,
+} from '../src'
 
 describe('TecsafeWidgetManager', () => {
   let mockTokenCallback: any
@@ -310,6 +316,16 @@ describe('TecsafeWidgetManager', () => {
         type: 'added-to-cart',
         payload: { linePosition: 2, success: false },
       })
+    })
+
+    it('exposes the handler types via the package entrypoint', () => {
+      const single: SingleAddToCartHandler = { single: async () => true }
+      const bulk: BulkAddToCartHandler = { bulk: async () => [] }
+      const either: AddToCartHandler = single
+      const tokenCb: CustomerTokenCallback = async () => 'token'
+      expect('single' in either).toBe(true)
+      expect(typeof bulk.bulk).toBe('function')
+      expect(typeof tokenCb).toBe('function')
     })
   })
 })

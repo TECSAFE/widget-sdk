@@ -11,11 +11,7 @@ import { CustomerTokenCallback } from './types/CustomerTokenCallback'
 
 import { EventBus } from './util/EventBus'
 import { Logger } from './util/Logger'
-import {
-  AddToCartHandler,
-  BulkAddToCartHandler,
-  SingleAddToCartHandler,
-} from './types/AddToCartHandler'
+import { AddToCartHandler } from './types/AddToCartHandler'
 
 import { parseCustomerJwt } from './util/ParseCustomerJwt'
 
@@ -60,19 +56,17 @@ export class TecsafeWidgetManager extends EventBus {
       this
     )
     this.on(IN_MESSAGES.InMessageAddToCart, async (e) => {
+      const handler = this.addToCartCallback
       const positions = e.event.positions
-      if ('bulk' in this.addToCartCallback) {
-        const results = await (
-          this.addToCartCallback as BulkAddToCartHandler
-        ).bulk(positions)
+      if ('bulk' in handler) {
+        const results = await handler.bulk(positions)
         results.forEach((result) => {
           e.respond(OUT_MESSAGES.OutMessageAddedToCart.create(result))
         })
-      } else if ('single' in this.addToCartCallback) {
-        const singleCb = this.addToCartCallback as SingleAddToCartHandler
+      } else {
         await Promise.all(
           positions.map(async (pos) => {
-            const success = await singleCb.single(
+            const success = await handler.single(
               pos.articleNumber,
               pos.quantity,
               pos.configurationId
@@ -150,10 +144,6 @@ export class TecsafeWidgetManager extends EventBus {
     this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenClosed.create())
   }
 
-  /**
-   * Sends a message to all widgets
-   * @param message The message to send
-   */
   /**
    * Sends a message to all widgets
    * @param message The message to send
