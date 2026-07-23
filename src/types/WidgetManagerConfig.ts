@@ -42,12 +42,20 @@ export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
   /**
    * The base URL for the widget UIs
    */
-  public widgetBaseURL: string = 'https://tecsafe.github.io/app-ui/iframe' // TODO: update to live page
+  public widgetBaseURL: string = 'https://app-ui.tecsafe.de/iframe'
 
   /**
    * A list of allowed origins for the SDK to communicate with
    */
-  public allowedOrigins: string[] = ['https://tecsafe.github.io'] // TODO: update to live page
+  public allowedOrigins: string[] = [
+    'tecsafe.github.io',
+    'tecsafe.de',
+    'editor.tecsafe.de',
+    'ofcp-editor.stage.tecsafe.de',
+    'ofcp-editor.testing.tecsafe.de',
+    'ofcp-editor.tecsafe-local.de',
+    'example.com',
+  ] // TODO: update to live page
 
   /**
    * Iframe styles.transition property
