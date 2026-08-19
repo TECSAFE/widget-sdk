@@ -134,4 +134,9 @@ export class AppWidget extends BaseWidget implements IAppWidget {
    * @see {@link AppWidget.url}
    */
   protected readonly uiPath = ''
+
+  /**
+   * @inheritdoc
+   */
+  protected readonly debugName = 'App'
 }

@@ -1,4 +1,19 @@
 /**
+ * A single TECSAFE article as listed by the shop.
+ * @category SDK
+ */
+export type TecsafeArticle = {
+  /**
+   * The TECSAFE product number of the article
+   */
+  productNumber: string
+  /**
+   * The price of the article
+   */
+  price: string
+}
+
+/**
  * Required configuration properties for the Widget Manager.
  * See the {@link WidgetManagerConfig} for the full configuration.
  */
@@ -20,6 +35,12 @@ export class RequiredWidgetManagerConfig {
    * Whether tax is included in the prices. Required to display correct pricing info - gross/net.
    */
   public taxIncluded!: boolean
+  /**
+   * The TECSAFE articles listed by the shop. Sent to widgets via
+   * {@link OutMessageSetTecsafeArticles}, either proactively or in response to a
+   * {@link InMessageRequestTecsafeArticles}.
+   */
+  public tecsafeArticles!: TecsafeArticle[]
 }
 
 /**
@@ -62,4 +83,20 @@ export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
    * Iframe styles.transition property
    */
   public iframeTransition: string = 'height 0.3s ease-in-out'
+
+  /**
+   * Enables the debug console widget. When true,
+   * {@link TecsafeWidgetManager.createDebugWidget} may be used to mount the TECSAFE debug
+   * console. Intended for development and integration testing only - leave it off in
+   * production.
+   */
+  public debugWidget: boolean = false
+
+  /**
+   * Injects the SDK debug overlay into the host page. When true, the widget manager renders a
+   * single collapsible overlay that logs the postMessage traffic of every widget, can send
+   * arbitrary messages to a selected widget, and can reset a widget. Intended for development
+   * and integration testing only - leave it off in production.
+   */
+  public sdkDebugger: boolean = false
 }

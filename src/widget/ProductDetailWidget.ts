@@ -36,4 +36,16 @@ export class ProductDetailWidget extends BaseWidget {
    * @inheritdoc
    */
   protected readonly uiPath = 'product-detail'
+
+  /**
+   * @inheritdoc
+   */
+  protected readonly debugName = 'ProductDetail'
+
+  /**
+   * @inheritdoc
+   */
+  public override _getDebugLabel(): string {
+    return `${this.debugName}(${this.articleNumber})`
+  }
 }

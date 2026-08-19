@@ -12,6 +12,7 @@ import { TecsafeWidgetManager } from '../../src/TecsafeWidgetSDK'
 import { OutMessageAddedToCart } from '../../src/messages/out/AddedToCart'
 import { Logger } from '../../src/util/Logger'
 import { InMessagePing } from '../../src/messages/in/Ping'
+import { DebugTap } from '../../src/debug/DebugTap'
 
 class ConcreteBaseWidget extends BaseWidget {
   public uiPath = 'test-path'
@@ -180,5 +181,68 @@ describe('BaseWidget', () => {
     })
     await widget.testOnMessage(event)
     expect(api._triggerListeners).not.toHaveBeenCalled()
+  })
+
+  it('reports outgoing messages to the debug tap', () => {
+    const seen: any[] = []
+    const off = DebugTap.subscribe((e) => seen.push(e))
+    widget.show()
+
+    widget.sendMessage(
+      OutMessageAddedToCart.create({ linePosition: 1, success: true })
+    )
+
+    off()
+    expect(seen).toHaveLength(1)
+    expect(seen[0].direction).toBe('out')
+    expect(seen[0].widget).toBe(widget)
+    expect(seen[0].envelope.type).toBe('added-to-cart')
+  })
+
+  it('reports incoming messages to the debug tap', async () => {
+    const seen: any[] = []
+    const off = DebugTap.subscribe((e) => seen.push(e))
+    widget.show()
+
+    await widget.testOnMessage({
+      origin: 'https://test.com',
+      source: widget.getIframe()?.contentWindow,
+      data: { type: 'tecsafe-ping', payload: { version: '1.2.3' } },
+    } as MessageEvent)
+
+    off()
+    expect(seen.filter((e) => e.direction === 'in')).toHaveLength(1)
+    expect(seen.find((e) => e.direction === 'in').envelope.payload).toEqual({
+      version: '1.2.3',
+    })
+  })
+
+  it('does not report messages from foreign origins', async () => {
+    const seen: any[] = []
+    const off = DebugTap.subscribe((e) => seen.push(e))
+    widget.show()
+
+    await widget.testOnMessage({
+      origin: 'https://evil.com',
+      source: widget.getIframe()?.contentWindow,
+      data: { type: 'tecsafe-ping', payload: {} },
+    } as MessageEvent)
+
+    off()
+    expect(seen).toHaveLength(0)
+  })
+
+  it('exposes a debug label', () => {
+    expect(widget._getDebugLabel()).toBe('Widget')
+  })
+
+  it('adds no listeners and no work when the debug tap is unused', () => {
+    const spy = jest.spyOn(DebugTap, 'report')
+    widget.show()
+    widget.sendMessage(
+      OutMessageAddedToCart.create({ linePosition: 1, success: true })
+    )
+    expect(spy).toHaveBeenCalled()
+    expect((DebugTap as any).listeners).toHaveLength(0)
   })
 })
