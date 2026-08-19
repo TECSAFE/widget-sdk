@@ -21,7 +21,14 @@ import { OutMessageAddedToCart } from './out/AddedToCart'
 import { InMessageRequestTecsafeArticles } from './in/RequestTecsafeArticles'
 import { OutMessageSetTecsafeArticles } from './out/SetTecsafeArticles'
 
-export type { ArticleIdentifier } from './in/RequestArticleInfo'
+// _IN_MESSAGES/_OUT_MESSAGES below are inferred (not annotated), so their declaration
+// emit has to write out ArticleIdentifier/TecsafeArticle inline. Without a local type
+// import in this file, Parcel's declaration bundler can't resolve those transitively-used
+// types and emits an unresolvable bare module specifier instead. TecsafeArticle is already
+// exported via WidgetManagerConfig, so it only needs importing here, not re-exporting.
+import type { ArticleIdentifier } from './in/RequestArticleInfo'
+export type { ArticleIdentifier }
+import type { TecsafeArticle } from '../types/WidgetManagerConfig'
 import { OutMessageContextId } from './out/ContextId'
 
 /**
