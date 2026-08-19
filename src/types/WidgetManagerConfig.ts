@@ -62,4 +62,20 @@ export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
    * Iframe styles.transition property
    */
   public iframeTransition: string = 'height 0.3s ease-in-out'
+
+  /**
+   * Enables the debug console widget. When true,
+   * {@link TecsafeWidgetManager.createDebugWidget} may be used to mount the TECSAFE debug
+   * console. Intended for development and integration testing only - leave it off in
+   * production.
+   */
+  public debugWidget: boolean = false
+
+  /**
+   * Injects the SDK debug overlay into the host page. When true, the widget manager renders a
+   * single collapsible overlay that logs the postMessage traffic of every widget, can send
+   * arbitrary messages to a selected widget, and can reset a widget. Intended for development
+   * and integration testing only - leave it off in production.
+   */
+  public sdkDebugger: boolean = false
 }
