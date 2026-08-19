@@ -15,6 +15,7 @@ import { MessageEnvelope } from './MessageEnvelope'
 import { EventBus } from '../util/EventBus'
 import { IWidget } from './Context'
 import { Logger } from '../util/Logger'
+import { DebugTap } from '../debug/DebugTap'
 
 /**
  * Base class for all widgets, providing common functionality
@@ -47,6 +48,21 @@ export class BaseWidget extends EventBus implements IWidget {
   protected readonly uiPath: string = 'iframe'
 
   /**
+   * The short name used to identify this widget kind in debug tooling. Kept explicit rather
+   * than derived from the class name, which is not stable in the minified bundle.
+   */
+  protected readonly debugName: string = 'Widget'
+
+  /**
+   * Internal method that returns a short human readable label for this widget, used by the
+   * SDK debug overlay to tell widgets apart.
+   * @returns The debug label
+   */
+  public _getDebugLabel(): string {
+    return this.debugName
+  }
+
+  /**
    * Sends a message to the iframe
    * @param message The message to send
    * @returns void
@@ -64,6 +80,7 @@ export class BaseWidget extends EventBus implements IWidget {
       )
       return
     }
+    DebugTap.report(this, 'out', message)
     this.iframe.contentWindow?.postMessage(message, origin)
   }
 
@@ -79,6 +96,8 @@ export class BaseWidget extends EventBus implements IWidget {
     if (event.source !== this.iframe.contentWindow) return
     if (typeof event.data !== 'object') return
     if (!event.data.type) return
+
+    DebugTap.report(this, 'in', event.data as MessageEnvelope)
 
     const respond = (msg: MessageEnvelope) => this.sendMessage(msg)
 

@@ -21,4 +21,9 @@ describe('ProductDetailWidget', () => {
     expect((widget as any).uiPath).toBe('product-detail')
     expect(widget).toBeDefined()
   })
+
+  it('exposes a debug label including the article number', () => {
+    const widget = new ProductDetailWidget(config, el, api, 'test-article-123')
+    expect(widget._getDebugLabel()).toBe('ProductDetail(test-article-123)')
+  })
 })

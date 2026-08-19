@@ -11,7 +11,9 @@ export * from './util/UrlParamRW'
 export * from './widget/AppWidget'
 export * from './widget/CustomPageWidget'
 export * from './widget/ProductDetailWidget'
+export * from './widget/DebugWidget'
 export * from './messages/Contract'
 export * from './messages/Messages'
+export * from './messages/Presets'
 
 export default TecsafeWidgetManager
