@@ -6,6 +6,8 @@ import { OUT_MESSAGES, IN_MESSAGES } from './messages/Messages'
 import { AppWidget } from './widget/AppWidget'
 import { ProductDetailWidget } from './widget/ProductDetailWidget'
 import { CustomPageWidget } from './widget/CustomPageWidget'
+import { DebugWidget } from './widget/DebugWidget'
+import { DebugManagerOverlay } from './debug/DebugManagerOverlay'
 import { readUrlParams, clearUrlParams } from './util/UrlParamRW'
 import { CustomerTokenCallback } from './types/CustomerTokenCallback'
 
@@ -320,6 +322,25 @@ export class TecsafeWidgetManager extends EventBus {
   ): CustomPageWidget {
     return this.createWidget(
       new CustomPageWidget(this.widgetManagerConfig, el, this, contextId)
+    )
+  }
+
+  /**
+   * Creates the TECSAFE debug console widget. The widget is registered like any other widget,
+   * so {@link TecsafeWidgetManager.destroyAll} and
+   * {@link TecsafeWidgetManager.sendToAllWidgets} include it.
+   * @param el The element to attach the widget to
+   * @returns The debug widget
+   * @throws An error if `debugWidget` is not enabled in the configuration
+   */
+  public createDebugWidget(el: HTMLElement): DebugWidget {
+    if (!this.widgetManagerConfig.debugWidget) {
+      throw new Error(
+        'createDebugWidget requires WidgetManagerConfig.debugWidget = true'
+      )
+    }
+    return this.createWidget(
+      new DebugWidget(this.widgetManagerConfig, el, this)
     )
   }
 

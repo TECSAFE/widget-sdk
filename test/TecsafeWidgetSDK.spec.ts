@@ -164,6 +164,48 @@ describe('TecsafeWidgetManager', () => {
     expect(manager.getWidgets()).toContain(widget)
   })
 
+  it('should refuse to create the debug widget when the flag is off', () => {
+    const manager = new TecsafeWidgetManager(
+      mockTokenCallback,
+      mockAddToCartCallback,
+      mockConfig
+    )
+    expect(() =>
+      manager.createDebugWidget(document.createElement('div'))
+    ).toThrow(
+      'createDebugWidget requires WidgetManagerConfig.debugWidget = true'
+    )
+  })
+
+  it('should create and register the debug widget when the flag is on', () => {
+    const manager = new TecsafeWidgetManager(
+      mockTokenCallback,
+      mockAddToCartCallback,
+      { ...mockConfig, debugWidget: true } as WidgetManagerConfig
+    )
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+    const widget = manager.createDebugWidget(el)
+    expect(manager.getWidgets()).toContain(widget)
+    expect(widget.getIframe()?.src).toBe(
+      'https://test.tecsafe.com/widget/debug'
+    )
+  })
+
+  it('should tear the debug widget down in destroyAll', async () => {
+    const manager = new TecsafeWidgetManager(
+      mockTokenCallback,
+      mockAddToCartCallback,
+      { ...mockConfig, debugWidget: true } as WidgetManagerConfig
+    )
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+    const widget = manager.createDebugWidget(el)
+    await manager.destroyAll()
+    expect(manager.getWidgets().length).toBe(0)
+    expect(widget.getIframe()).toBeNull()
+  })
+
   it('should test token methods', async () => {
     const manager = new TecsafeWidgetManager(
       mockTokenCallback,
