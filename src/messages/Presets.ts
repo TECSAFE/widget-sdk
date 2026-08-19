@@ -40,7 +40,12 @@ export const MESSAGE_PRESETS: Record<string, unknown> = {
   [IN_MESSAGES.InMessageRequestFullScreenState.type]: null,
   [IN_MESSAGES.InMessageRequestMetaData.type]: null,
   [IN_MESSAGES.InMessageRequestArticleInfo.type]: {
-    articleNumber: 'example',
+    articles: [
+      {
+        ean: 'example',
+        manufacturerArticleNumber: 'example',
+      },
+    ],
   },
   [OUT_MESSAGES.OutMessagePong.type]: {
     version: 'example',
