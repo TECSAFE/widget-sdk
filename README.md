@@ -105,6 +105,48 @@ method.
 manager.destroyAll()
 ```
 
+### Debug tooling
+
+The SDK ships two opt-in development helpers. Both are off by default and must stay off in
+production - they expose the raw widget communication and let anyone on the page send arbitrary
+messages into a widget.
+
+```typescript
+const manager = new TecsafeWidgetManager(tokenCallback, addToCartHandler, new WidgetManagerConfig({
+  trackingAllowed: false,
+  languageRFC4647: 'en-US',
+  currencyCodeISO4217: 'USD',
+  taxIncluded: true,
+  debugWidget: true, // allows createDebugWidget()
+  sdkDebugger: true, // injects the debug overlay into your page
+}))
+```
+
+**`debugWidget`** unlocks
+[`createDebugWidget`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#createDebugWidget),
+which mounts the TECSAFE debug console in place of a regular widget. The console shows the
+widget side of the exchange and can send messages back to your page. Calling it while the flag
+is off throws.
+
+```javascript
+const debugWidget = manager.createDebugWidget(document.getElementById('widget-slot'))
+```
+
+**`sdkDebugger`** injects a single collapsible overlay into the bottom right of your page. It
+logs the postMessage traffic of every widget in both directions, lets you pick which widget to
+watch, sends a preset or free-form message to the selected widget, and can reset a widget
+(destroy and show it again). The overlay renders inside a shadow root, so it neither inherits
+your styles nor affects them, and `destroyAll()` removes it again.
+
+**`MESSAGE_PRESETS`** exposes one example payload per message type, keyed by the message type
+string, for messages without a payload `null`. Use it to prefill your own tooling or tests.
+
+```javascript
+import { MESSAGE_PRESETS, OUT_MESSAGES } from '@tecsafe/widget-sdk'
+
+const example = MESSAGE_PRESETS[OUT_MESSAGES.OutMessageSetToken.type] // { token: 'example' }
+```
+
 ## Widget Communication & Events
 
 ### Widget communication architecture
