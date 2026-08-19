@@ -18,6 +18,10 @@ import { InMessageAddToCart } from './in/AddToCart'
 import { OutMessageArticleInfo } from './out/ArticleInfo'
 import { InMessageRequestArticleInfo } from './in/RequestArticleInfo'
 import { OutMessageAddedToCart } from './out/AddedToCart'
+import { InMessageRequestTecsafeArticles } from './in/RequestTecsafeArticles'
+import { OutMessageSetTecsafeArticles } from './out/SetTecsafeArticles'
+
+export type { ArticleIdentifier } from './in/RequestArticleInfo'
 import { OutMessageContextId } from './out/ContextId'
 
 /**
@@ -52,6 +56,7 @@ export const _IN_MESSAGES = {
   InMessageRequestFullScreenState,
   InMessageRequestMetaData,
   InMessageRequestArticleInfo,
+  InMessageRequestTecsafeArticles,
 }
 
 /**
@@ -67,6 +72,7 @@ export const _OUT_MESSAGES = {
   OutMessageSetMetaData,
   OutMessageArticleInfo,
   OutMessageAddedToCart,
+  OutMessageSetTecsafeArticles,
 }
 
 /**

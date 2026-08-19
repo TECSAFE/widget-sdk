@@ -1,4 +1,5 @@
 import { MessageEnvelope } from './MessageEnvelope'
+import { WidgetManagerConfig } from './WidgetManagerConfig'
 
 /**
  * Interface for a widget, setting up a common ground for the compiler/typescript.
@@ -20,6 +21,7 @@ export interface IAppWidget extends IWidget {
  * Interface for the SDK, setting up a common ground for the compiler/typescript.
  */
 export interface ISDK {
+  getConfig(): WidgetManagerConfig
   openFullScreen(url: string): void
   closeFullScreen(): void
   destroyFullScreen(): void

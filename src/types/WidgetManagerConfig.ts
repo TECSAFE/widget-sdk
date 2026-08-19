@@ -1,4 +1,19 @@
 /**
+ * A single TECSAFE article as listed by the shop.
+ * @category SDK
+ */
+export type TecsafeArticle = {
+  /**
+   * The TECSAFE product number of the article
+   */
+  productNumber: string
+  /**
+   * The price of the article
+   */
+  price: string
+}
+
+/**
  * Required configuration properties for the Widget Manager.
  * See the {@link WidgetManagerConfig} for the full configuration.
  */
@@ -20,6 +35,12 @@ export class RequiredWidgetManagerConfig {
    * Whether tax is included in the prices. Required to display correct pricing info - gross/net.
    */
   public taxIncluded!: boolean
+  /**
+   * The TECSAFE articles listed by the shop. Sent to widgets via
+   * {@link OutMessageSetTecsafeArticles}, either proactively or in response to a
+   * {@link InMessageRequestTecsafeArticles}.
+   */
+  public tecsafeArticles!: TecsafeArticle[]
 }
 
 /**

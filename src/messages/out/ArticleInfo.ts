@@ -1,4 +1,5 @@
 import { defineMessage } from '../Contract'
+import { ArticleIdentifier } from '../in/RequestArticleInfo'
 
 /**
  * Outgoing message to send article info to the iframe.
@@ -9,6 +10,12 @@ import { defineMessage } from '../Contract'
  * @see {@link InMessageRequestArticleInfo}
  */
 export const OutMessageArticleInfo = defineMessage<{
+  /**
+   * The requested {@link ArticleIdentifier} this response belongs to, echoed
+   * back verbatim from the {@link InMessageRequestArticleInfo} payload so the
+   * widget can correlate the response to its request.
+   */
+  article: ArticleIdentifier
   /**
    * The shops internal article number
    */

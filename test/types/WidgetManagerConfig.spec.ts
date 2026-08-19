@@ -6,6 +6,7 @@ const required = {
   languageRFC4647: 'de-DE',
   currencyCodeISO4217: 'EUR',
   taxIncluded: true,
+  tecsafeArticles: [{ productNumber: 'TS-1', price: '9.99' }],
 }
 
 describe('WidgetManagerConfig', () => {
@@ -23,5 +24,12 @@ describe('WidgetManagerConfig', () => {
     })
     expect(config.debugWidget).toBe(true)
     expect(config.sdkDebugger).toBe(true)
+  })
+
+  it('carries the tecsafe articles through the constructor', () => {
+    const config = new WidgetManagerConfig(required)
+    expect(config.tecsafeArticles).toEqual([
+      { productNumber: 'TS-1', price: '9.99' },
+    ])
   })
 })

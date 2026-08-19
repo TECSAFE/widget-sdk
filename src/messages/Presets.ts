@@ -47,6 +47,7 @@ export const MESSAGE_PRESETS: Record<string, unknown> = {
       },
     ],
   },
+  [IN_MESSAGES.InMessageRequestTecsafeArticles.type]: null,
   [OUT_MESSAGES.OutMessagePong.type]: {
     version: 'example',
   },
@@ -62,6 +63,10 @@ export const MESSAGE_PRESETS: Record<string, unknown> = {
     registeredEvents: ['example'],
   },
   [OUT_MESSAGES.OutMessageArticleInfo.type]: {
+    article: {
+      ean: 'example',
+      manufacturerArticleNumber: 'example',
+    },
     articleNumber: 'example',
     info: {
       ean: 'example',
@@ -82,5 +87,13 @@ export const MESSAGE_PRESETS: Record<string, unknown> = {
   [OUT_MESSAGES.OutMessageAddedToCart.type]: {
     linePosition: 0,
     success: true,
+  },
+  [OUT_MESSAGES.OutMessageSetTecsafeArticles.type]: {
+    articles: [
+      {
+        productNumber: 'example',
+        price: '9.99',
+      },
+    ],
   },
 }
