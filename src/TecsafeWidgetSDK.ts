@@ -83,6 +83,9 @@ export class TecsafeWidgetManager extends EventBus {
         )
       }
     })
+    if (widgetManagerConfig.sdkDebugger) {
+      this.debugOverlay = new DebugManagerOverlay(this)
+    }
     // To don't make it to obvious thats a "browserID"
     // We shorten it to "bid"
     this.browserId =
@@ -106,6 +109,7 @@ export class TecsafeWidgetManager extends EventBus {
 
   private browserId!: string
   private widgets: BaseWidget[] = []
+  private debugOverlay: DebugManagerOverlay | null = null
   private appWidget!: AppWidget
   private token!: string
   private tokenTimeout!: number
@@ -279,6 +283,8 @@ export class TecsafeWidgetManager extends EventBus {
     this.appWidget.destroy()
     for (const widget of this.widgets) widget.destroy()
     this.widgets = []
+    this.debugOverlay?.destroy()
+    this.debugOverlay = null
   }
 
   /**

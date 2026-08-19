@@ -206,6 +206,40 @@ describe('TecsafeWidgetManager', () => {
     expect(widget.getIframe()).toBeNull()
   })
 
+  it('does not touch the page when sdkDebugger is off', () => {
+    document.body.innerHTML = ''
+    new TecsafeWidgetManager(
+      mockTokenCallback,
+      mockAddToCartCallback,
+      mockConfig
+    )
+    expect(document.body.childElementCount).toBe(0)
+  })
+
+  it('mounts the debug overlay when sdkDebugger is on', () => {
+    document.body.innerHTML = ''
+    new TecsafeWidgetManager(mockTokenCallback, mockAddToCartCallback, {
+      ...mockConfig,
+      sdkDebugger: true,
+    } as WidgetManagerConfig)
+    const host = document.body.firstElementChild as HTMLElement
+    expect(host.shadowRoot?.querySelector('.launcher')).toBeTruthy()
+  })
+
+  it('tears the debug overlay down in destroyAll', async () => {
+    document.body.innerHTML = ''
+    const manager = new TecsafeWidgetManager(
+      mockTokenCallback,
+      mockAddToCartCallback,
+      {
+        ...mockConfig,
+        sdkDebugger: true,
+      } as WidgetManagerConfig
+    )
+    await manager.destroyAll()
+    expect(document.body.childElementCount).toBe(0)
+  })
+
   it('should test token methods', async () => {
     const manager = new TecsafeWidgetManager(
       mockTokenCallback,
