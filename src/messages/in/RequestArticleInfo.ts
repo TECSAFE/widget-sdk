@@ -1,23 +1,38 @@
 import { defineMessage } from '../Contract'
 
 /**
- * Incoming request from the iframe to get article info.
+ * Incoming request from the iframe to get article info about a list of articles.
  * If subscribed it is expected that a {@link OutMessageArticleInfo} is send back.
  * @example
  * ```ts
  * sdk.on(InMessageRequestArticleInfo, (e) => {
- *   e.respond(OutMessageArticleInfo.create({
- *     articleNumber: e.event.articleNumber,
- *     info: {
- *       name: 'Article Name',
- *       price: '100',
- *     },
- *   }))
+ *   for (const article of e.event.articles) {
+ *     // fetch article info from your database
+ *     const a = await fetchMyShopArticleInfo(article.ean, article.manufacturerArticleNumber)
+ *     e.respond(OutMessageArticleInfo.create({
+ *       articleNumber: a.articleNumber,
+ *       info: {
+ *         name: a.name,
+ *         price: a.price,
+ *       },
+ *     }))
+ *   }
  * })
  * ```
  * @category InMessage
  * @see {@link OutMessageArticleInfo}
  */
 export const InMessageRequestArticleInfo = defineMessage<{
-  articleNumber: string
+  articles: (
+    | {
+        ean: string
+        manufacturerArticleNumber: string
+      }
+    | {
+        ean: string
+      }
+    | {
+        manufacturerArticleNumber: string
+      }
+  )[]
 }>('request-article-info')
