@@ -35,4 +35,11 @@ describe('DebugWidget', () => {
     widget.show()
     expect(widget.getIframe()?.src).toBe('https://test.com/iframe/debug')
   })
+
+  it('exposes a debug label', () => {
+    const widget = new DebugWidget(config, el, {
+      _triggerListeners: jest.fn(),
+    } as never)
+    expect(widget._getDebugLabel()).toBe('Debug')
+  })
 })

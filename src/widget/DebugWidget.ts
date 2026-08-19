@@ -13,4 +13,9 @@ export class DebugWidget extends BaseWidget {
    * @inheritdoc
    */
   protected override readonly uiPath = 'debug'
+
+  /**
+   * @inheritdoc
+   */
+  protected readonly debugName = 'Debug'
 }

@@ -37,4 +37,18 @@ export class CustomPageWidget extends BaseWidget {
    * @inheritdoc
    */
   protected readonly uiPath = 'custom-page'
+
+  /**
+   * @inheritdoc
+   */
+  protected readonly debugName = 'CustomPage'
+
+  /**
+   * @inheritdoc
+   */
+  public override _getDebugLabel(): string {
+    return this.contextId
+      ? `${this.debugName}(${this.contextId})`
+      : this.debugName
+  }
 }

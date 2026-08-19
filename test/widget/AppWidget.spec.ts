@@ -72,4 +72,9 @@ describe('AppWidget', () => {
     ;(widget as any).postDestroy()
     expect(document.body.contains((widget as any).el)).toBe(false)
   })
+
+  it('exposes a debug label', () => {
+    const widget = new AppWidget(config, el, api)
+    expect(widget._getDebugLabel()).toBe('App')
+  })
 })
