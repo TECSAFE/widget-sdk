@@ -18,7 +18,7 @@ jobs:
       # `owner/action` against its own configured default host, which is not
       # necessarily github.com.
       - name: Checkout
-        uses: https://github.com/actions/checkout@v4
+        uses: actions/checkout@v4
       - name: Setup Node
         uses: https://github.com/actions/setup-node@v4
         with:
