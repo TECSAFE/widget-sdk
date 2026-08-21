@@ -10,8 +10,12 @@ export const InMessageSizeUpdate = defineMessage<{
    * The height of the iframe requested by the widget in pixels
    */
   height: number
-}>('size-update', (e, sdk, widget) => {
-  const iframe = widget.getIframe()
-  if (iframe) iframe.style.height = `${e.event.height}px`
-  else throw new Error('Iframe not found')
-})
+}>(
+  'size-update',
+  (e, sdk, widget) => {
+    const iframe = widget.getIframe()
+    if (iframe) iframe.style.height = `${e.event.height}px`
+    else throw new Error('Iframe not found')
+  },
+  () => ({ height: 0 })
+)

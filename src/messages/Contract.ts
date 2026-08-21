@@ -36,6 +36,7 @@ export type MessageEventHandler<P> = (
 export type MessageDefinition<P> = {
   type: string
   create: (payload: P) => MessageEnvelope<P>
+  preset: () => P | null
   defaultHandler?: MessageEventHandler<P>
 }
 
@@ -47,11 +48,13 @@ export type MessageDefinition<P> = {
  */
 export function defineMessage<P>(
   type: string,
-  defaultHandler?: MessageEventHandler<P>
+  defaultHandler: MessageEventHandler<P> | undefined,
+  preset: () => P | null
 ): MessageDefinition<P> {
   return {
     type,
     create: (payload: P) => ({ type, payload }),
+    preset,
     defaultHandler,
   }
 }

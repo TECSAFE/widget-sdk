@@ -11,4 +11,4 @@ export const OutMessageSetMetaData = defineMessage<{
    * The list of events the parent has registered listeners for
    */
   registeredEvents: string[]
-}>('set-meta-data')
+}>('set-meta-data', undefined, () => ({ registeredEvents: ['example'] }))

@@ -11,5 +11,6 @@ export const InMessageDestroyFullScreen = defineMessage<void>(
   'destroy-full-screen',
   (e, sdk) => {
     sdk.destroyFullScreen()
-  }
+  },
+  () => null
 )

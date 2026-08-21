@@ -1,21 +1,5 @@
 import { defineMessage } from '../Contract'
-
-/**
- * Identifies an article by EAN and/or manufacturer article number.
- * At least one of the two identifiers is always present.
- * @category InMessage
- */
-export type ArticleIdentifier =
-  | {
-      ean: string
-      manufacturerArticleNumber: string
-    }
-  | {
-      ean: string
-    }
-  | {
-      manufacturerArticleNumber: string
-    }
+import { ArticleIdentifier } from '../../types/ArticleIdentifier'
 
 /**
  * Incoming request from the iframe to get article info about a list of articles.
@@ -44,4 +28,11 @@ export type ArticleIdentifier =
  */
 export const InMessageRequestArticleInfo = defineMessage<{
   articles: ArticleIdentifier[]
-}>('request-article-info')
+}>('request-article-info', undefined, () => ({
+  articles: [
+    {
+      ean: 'example',
+      manufacturerArticleNumber: 'example',
+    },
+  ],
+}))

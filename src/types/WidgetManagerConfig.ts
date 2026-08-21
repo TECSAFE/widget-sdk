@@ -1,17 +1,4 @@
-/**
- * A single TECSAFE article as listed by the shop.
- * @category SDK
- */
-export type TecsafeArticle = {
-  /**
-   * The TECSAFE product number of the article
-   */
-  productNumber: string
-  /**
-   * The price of the article
-   */
-  price: string
-}
+import { TecsafeArticle } from './TecsafeArticle'
 
 /**
  * Required configuration properties for the Widget Manager.

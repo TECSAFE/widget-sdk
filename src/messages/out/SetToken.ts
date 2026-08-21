@@ -11,4 +11,4 @@ export const OutMessageSetToken = defineMessage<{
    * The authentication token
    */
   token: string
-}>('set-token')
+}>('set-token', undefined, () => ({ token: 'example' }))

@@ -1,7 +1,6 @@
 import { TecsafeWidgetManager } from '../TecsafeWidgetSDK'
 import { BaseWidget } from '../types/BaseWidget'
 import { OUT_MESSAGES } from '../messages/Messages'
-import { MESSAGE_PRESETS } from '../messages/Presets'
 import { OVERLAY_STYLES } from './OverlayStyles'
 import { DebugTap, DebugTapDirection, DebugTapEvent } from './DebugTap'
 
@@ -436,7 +435,10 @@ export class DebugManagerOverlay {
   private applyPreset(): void {
     const type = this.presetSelect.value
     if (!type) return
-    const payload = MESSAGE_PRESETS[type] ?? null
+    const definition = Object.values(OUT_MESSAGES).find(
+      (message) => message.type === type
+    )
+    const payload = definition?.preset() ?? null
     this.payloadInput.value = JSON.stringify({ type, payload }, null, 2)
   }
 

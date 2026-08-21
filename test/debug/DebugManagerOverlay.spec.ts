@@ -9,7 +9,6 @@ import {
 import { DebugManagerOverlay } from '../../src/debug/DebugManagerOverlay'
 import { DebugTap } from '../../src/debug/DebugTap'
 import { OUT_MESSAGES } from '../../src/messages/Messages'
-import { MESSAGE_PRESETS } from '../../src/messages/Presets'
 
 const makeWidget = (label: string) => ({
   _getDebugLabel: () => label,
@@ -232,7 +231,7 @@ describe('DebugManagerOverlay contents', () => {
 
     expect(JSON.parse(select(root, 'payload').value)).toEqual({
       type: OUT_MESSAGES.OutMessageSetToken.type,
-      payload: MESSAGE_PRESETS[OUT_MESSAGES.OutMessageSetToken.type],
+      payload: OUT_MESSAGES.OutMessageSetToken.preset(),
     })
   })
 

@@ -22,5 +22,6 @@ export const InMessageRequestMetaData = defineMessage<void>(
         registeredEvents: allEvents,
       })
     )
-  }
+  },
+  () => null
 )

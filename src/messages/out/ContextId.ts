@@ -11,4 +11,4 @@ export const OutMessageContextId = defineMessage<{
    * The context id
    */
   contextId: string
-}>('context-id')
+}>('context-id', undefined, () => ({ contextId: 'example' }))

@@ -11,5 +11,6 @@ export const InMessageRequestToken = defineMessage<void>(
   'request-token',
   async (e, sdk) => {
     e.respond(OutMessageSetToken.create({ token: await sdk.getToken() }))
-  }
+  },
+  () => null
 )

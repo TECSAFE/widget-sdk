@@ -17,5 +17,6 @@ export const InMessageRequestFullScreenState = defineMessage<void>(
     } else {
       e.respond(OutMessageFullScreenClosed.create())
     }
-  }
+  },
+  () => null
 )
