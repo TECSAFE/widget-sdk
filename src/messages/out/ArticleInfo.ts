@@ -1,5 +1,5 @@
 import { defineMessage } from '../Contract'
-import { ArticleIdentifier } from '../in/RequestArticleInfo'
+import { ArticleIdentifier } from '../../types/ArticleIdentifier'
 
 /**
  * Outgoing message to send article info to the iframe.
@@ -17,17 +17,13 @@ export const OutMessageArticleInfo = defineMessage<{
    */
   article: ArticleIdentifier
   /**
-   * The shops internal article number
-   */
-  articleNumber: string
-  /**
    * Article info, null if not available
    */
   info: null | {
     /**
-     * EAN (European Article Number) for the article
+     * The shops internal article number
      */
-    ean: string
+    articleNumber: string
     /**
      * Name of the article
      */
@@ -79,4 +75,21 @@ export const OutMessageArticleInfo = defineMessage<{
      */
     alternativeArticleNumbers?: string[]
   }
-}>('article-info')
+}>('article-info', undefined, () => ({
+  article: { ean: 'example', manufacturerArticleNumber: 'example' },
+  info: {
+    articleNumber: 'example',
+    name: 'example',
+    price: '9.99',
+    stock: 0,
+    description: 'example',
+    seoKeywords: ['example'],
+    lengthInMm: 0,
+    widthInMm: 0,
+    heightInMm: 0,
+    weightInGrams: 0,
+    images: ['https://example.com'] as unknown as URL[],
+    media: ['https://example.com'] as unknown as URL[],
+    alternativeArticleNumbers: ['example'],
+  },
+}))

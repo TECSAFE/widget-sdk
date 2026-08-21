@@ -16,5 +16,6 @@ export const InMessageRequestTecsafeArticles = defineMessage<void>(
         articles: sdk.getConfig().tecsafeArticles,
       })
     )
-  }
+  },
+  () => null
 )

@@ -15,4 +15,4 @@ export const OutMessageAddedToCart = defineMessage<{
    * The success status of the add to cart operation
    */
   success: boolean
-}>('added-to-cart')
+}>('added-to-cart', undefined, () => ({ linePosition: 0, success: true }))

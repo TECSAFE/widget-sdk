@@ -23,6 +23,7 @@ describe('EventBus', () => {
   const mockMessage: MessageDefinition<any> = {
     type: 'test-message',
     create: jest.fn() as any,
+    preset: () => null,
   }
 
   const mockSdk = {} as ISDK

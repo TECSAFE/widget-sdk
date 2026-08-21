@@ -11,4 +11,4 @@ export const OutMessagePong = defineMessage<{
    * The version of the SDK
    */
   version: string
-}>('tecsafe-pong')
+}>('tecsafe-pong', undefined, () => ({ version: 'example' }))

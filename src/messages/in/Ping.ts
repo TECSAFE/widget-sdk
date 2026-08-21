@@ -13,6 +13,10 @@ export const InMessagePing = defineMessage<{
    * The version of the Widget
    */
   version: string
-}>('tecsafe-ping', (e) => {
-  e.respond(OutMessagePong.create({ version: SDK_VERSION }))
-})
+}>(
+  'tecsafe-ping',
+  (e) => {
+    e.respond(OutMessagePong.create({ version: SDK_VERSION }))
+  },
+  () => ({ version: 'example' })
+)

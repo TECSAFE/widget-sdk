@@ -29,4 +29,13 @@ export const InMessageAddToCart = defineMessage<{
      */
     configurationId?: string
   }[]
-}>('add-to-cart')
+}>('add-to-cart', undefined, () => ({
+  positions: [
+    {
+      linePosition: 0,
+      articleNumber: 'example',
+      quantity: 1,
+      configurationId: 'example',
+    },
+  ],
+}))

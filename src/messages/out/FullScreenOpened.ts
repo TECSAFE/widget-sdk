@@ -7,5 +7,8 @@ import { defineMessage } from '../Contract'
  * @see {@link InMessageRequestFullScreenState}
  * @see {@link InMessageOpenFullScreen}
  */
-export const OutMessageFullScreenOpened =
-  defineMessage<void>('full-screen-opened')
+export const OutMessageFullScreenOpened = defineMessage<void>(
+  'full-screen-opened',
+  undefined,
+  () => null
+)

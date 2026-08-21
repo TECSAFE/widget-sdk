@@ -21,8 +21,12 @@ import { OutMessageAddedToCart } from './out/AddedToCart'
 import { InMessageRequestTecsafeArticles } from './in/RequestTecsafeArticles'
 import { OutMessageSetTecsafeArticles } from './out/SetTecsafeArticles'
 
-export type { ArticleIdentifier } from './in/RequestArticleInfo'
 import { OutMessageContextId } from './out/ContextId'
+
+// Keep these types local so Parcel emits resolvable relative module specifiers in declarations
+// for the inferred _IN_MESSAGES/_OUT_MESSAGES payload types.
+import type { ArticleIdentifier } from '../types/ArticleIdentifier'
+import type { TecsafeArticle } from '../types/TecsafeArticle'
 
 /**
  * Helper type to strip the import type from a message definition.
