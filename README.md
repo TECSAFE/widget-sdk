@@ -232,26 +232,6 @@ It carries `{ positions, tecsafeTotal }`. Each position includes:
 Respond once with `OUT_MESSAGES.OutMessageCartPunchoutResult.create({ success })` after processing
 the entire transfer. The response is a normal widget event; it carries no HTTP status code.
 
-## Migrating an existing integration
-
-Update existing integrations for these API changes:
-
-- Construct the manager with `(customerTokenCallback, widgetManagerConfig)`. The constructor cart
-  callback and the `SingleAddToCartHandler` / `BulkAddToCartHandler` exports have been removed.
-- Replace `add-to-cart` / `added-to-cart` with the complete `cart-punchout` /
-  `cart-punchout-result` exchange, and register all three required event handlers before starting
-  widgets.
-- Use `language`, `currencyCode` and `priceMode: 'gross' | 'net'` instead of `languageRFC4647`,
-  `currencyCodeISO4217` and `taxIncluded`. Supply the required `taxCategories` (`S` and `AA`) and
-  `tecsafeArticles` array; use an empty array if the shop lists no TECSAFE articles.
-- Replace article identifier `ean` with `gtin`. Identifiers also support
-  `manufacturerArticleNumber` and `supplierArticleNumber`. Keep the `{ article, info }` response
-  wrapper and echo all fields of the requested identifier.
-- Update article info to use `hostShopArticleNumber`, optional `availableStock`, `taxCategory`, and
-  `priceScales`. A single `price` or numeric `stock` no longer matches the response contract.
-- Use each message definition's `preset()` for debug payloads. The old `MESSAGE_PRESETS` map is no
-  longer exported.
-
 ## Customer tokens
 
 Your token callback should call an authenticated route in your backend. That route requests a
