@@ -1,412 +1,333 @@
 # Widget SDK
 
-The TECSAFE Widget SDK provides a convenience wrapper to interact with TECSAFE Widgets
-(PDP-Layout-Configurator, Layout-Editor, Layout-Project-App), handling IFrame communication and JWT
-management automatically. The full Widget API documentation can be found on
-[tecsafe.github.io/widget-sdk](https://tecsafe.github.io/widget-sdk).
+The TECSAFE Widget SDK embeds TECSAFE widgets (product configurator, layout editor and project app)
+and handles iframe communication and customer JWT management. The full API documentation is
+available at [tecsafe.github.io/widget-sdk](https://tecsafe.github.io/widget-sdk).
 
-## API Usage
-
-The Widget SDK is publicly available on npm. You can install it via npm or yarn:
+## Installation
 
 ```bash
 npm install @tecsafe/widget-sdk
 ```
 
-### Initializing the SDK
+> ⚠️ **Register all required event handlers before starting any widget.** Register them on the manager
+> immediately after construction, before calling `createProductDetailWidget()`,
+> `createCustomPageWidget()` or `openFullScreen()`. These methods throw if a required handler is
+> missing. See [Required event handlers](#required-event-handlers) for the complete list and responses.
 
-First, initialize the
-[`TecsafeWidgetManager`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html). It
-requires three arguments:
+## Initializing the SDK
 
-1. [`customerTokenCallback`](https://tecsafe.github.io/widget-sdk/types/CustomerTokenCallback.html)
-2. [`addToCartCallback`](https://tecsafe.github.io/widget-sdk/types/AddToCartHandler.html)
-3. [`widgetManagerConfig`](https://tecsafe.github.io/widget-sdk/classes/WidgetManagerConfig.html)
-
-It is important to instantiate the manager only once, as otherwise the SDK could fetch multiple
-salechannel customer tokens or cause duplicate event bindings.
+Instantiate one `TecsafeWidgetManager` per page, after obtaining any required customer consent.
+The constructor takes two arguments: a customer token callback and a `WidgetManagerConfig`.
+Cart operations use the event API described below.
 
 ```typescript
 import { TecsafeWidgetManager, WidgetManagerConfig } from '@tecsafe/widget-sdk'
+import { registerShopEvents } from './tecsafe-events'
 
 const manager = new TecsafeWidgetManager(
-  // 1. Customer Token Callback
   async (oldToken?: string) => {
-    const response = await fetch('https://mybackend.com/tecsafe/saleschannel-customer-token', {
+    const response = await fetch('/tecsafe/saleschannel-customer-token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ oldToken }),
     })
+    if (!response.ok) throw new Error('Could not obtain the customer token')
     const json = await response.json()
     return json.token
   },
-  // 2. Add To Cart Handler
-  {
-    single: async (articleNumber, quantity, configurationId) => {
-      // Your custom logic to add an item to the cart
-      return true // Return boolean to indicate success
-    },
-  },
-  // 3. Configuration
   new WidgetManagerConfig({
-    trackingAllowed: true,
-    languageRFC4647: 'en-US',
-    currencyCodeISO4217: 'USD',
-    taxIncluded: true,
+    trackingAllowed: true, // Set according to the customer's consent.
+    language: 'en-US',
+    currencyCode: 'EUR',
+    priceMode: 'gross',
+    taxCategories: { S: 19, AA: 7 },
+    tecsafeArticles: [{ productNumber: 'TS-1', price: '59.50' }],
   })
 )
+
+// Required: register all three handlers before starting widgets.
+// Implemented in tecsafe-events.ts below.
+registerShopEvents(manager)
+
+const container = document.getElementById('product-detail-widget')
+if (!container) throw new Error('Widget container not found')
+const widget = manager.createProductDetailWidget(container, 'SKU-123456')
 ```
 
-### Creating a Widget
+### Required event handlers
 
-Use the `manager` instance to create widgets and attach them to DOM elements. This will inject
-TECSAFE iframes with the respectively requested applications. All available widgets alongside their
-purpose can be found in the documentation under the widget section:
-[`@tecsafe/widget-sdk > Widget`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html)
+The manager requires an active handler for each of these requests:
 
-```javascript
-const pdWidget = manager.createProductDetailWidget(
-  document.getElementById('product-detail-widget'),
-  'the-article-number-of-the-product'
-)
+| Request to handle                                                    | Response to send                                                                                   |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `IN_MESSAGES.InMessageRequestArticleInfo` (`request-article-info`)   | `OUT_MESSAGES.OutMessageArticleInfo` (`article-info`), once per requested article                  |
+| `IN_MESSAGES.InMessageRequestLayoutPrices` (`request-layout-prices`) | `OUT_MESSAGES.OutMessageLayoutPrices` (`layout-prices`), echoing `requestId`                       |
+| `IN_MESSAGES.InMessageCartPunchout` (`cart-punchout`)                | `OUT_MESSAGES.OutMessageCartPunchoutResult` (`cart-punchout-result`), once for the entire transfer |
+
+Always initialize the integration in this order:
+
+1. Construct the manager with the token callback and configuration.
+2. Register all three handlers with `manager.on(...)` using the
+   [shop integration example](#shop-integration-example).
+3. Create the product/custom-page widget or open fullscreen.
+
+Register the handlers synchronously, even when the handlers themselves perform asynchronous work.
+A fullscreen URL restored on page load opens in a microtask after construction, so register handlers
+immediately after constructing the manager, before an `await` or other deferred setup.
+
+`createProductDetailWidget()`, `createCustomPageWidget()` and `openFullScreen()` validate the required
+handlers on every call, before creating or opening the widget. Missing handlers cause an `Error`
+listing **every missing event** and explaining how to register them. For example:
+
+```text
+Missing required event handlers: cart-punchout, request-article-info, request-layout-prices. Register each handler with manager.on(IN_MESSAGES.<message>, handler) before creating or opening a widget.
 ```
 
-### Updating the sales channel customer token
+Use `on()` for persistent integrations. If the last handler is removed with `off()` or consumed by
+`once()`, register it again before starting another widget. Keep the handlers registered while
+widgets are running so requests can still be processed. Registration is required even when there
+are no matching articles or the host cart is unavailable: respond with `info: null` or
+`{ success: false }` as appropriate.
 
-We are assuming two types of users within a sales channel:
+The debug console created by `createDebugWidget()` is exempt from these business-event checks so
+it can be used to troubleshoot an incomplete integration. It still requires `debugWidget: true`.
 
-1. guest
-2. registered / logged in customer
+## Widget events
 
-If a customer's login status changes you have to notify TECSAFE about that change. The
-[customer token API](https://ofcp-api-gateway.staging.tecsafe.de/api#/Auth%20controller/AuthController_loginSaleschannelCustomer_v1)
-will ensure that guest assets will be transferred to registered accounts on login and that
-registered customer sessions will be cleaned appropriately for a new guest session. You can update
-the token by calling the
-[`refreshToken`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#refreshToken)
-method. This will call the customerTokenCallback from the constructor. Alternatively, you can also
-pass the token directly
+`IN_MESSAGES` contains requests from widgets to the host shop. `OUT_MESSAGES` contains messages
+from the host shop to widgets. The SDK handles internal messages such as token requests itself.
+Business events must be handled by your application. Reply with `e.respond(...)` to target the
+requesting widget; `manager.emit(...)` broadcasts to all widgets.
 
-```javascript
-manager.refreshToken()
+### Shop integration example
 
-// Alternatively, you can also pass the token directly if you happen to have requested it already in the process.
-manager.refreshToken('<new-token>')
-```
-
-### Unmounting & Cleanup
-
-If a user withdraws consent, or navigates away from the page (relevant for SPAs), you should destroy
-all widgets and clean up event listeners by calling the
-[`destroyAll`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#destroyAll)
-method.
-
-```javascript
-manager.destroyAll()
-```
-
-### Debug tooling
-
-The SDK ships two opt-in development helpers. Both are off by default and must stay off in
-production - they expose the raw widget communication and let anyone on the page send arbitrary
-messages into a widget.
+Create `tecsafe-events.ts` with your application's event handlers. The example endpoints below
+represent routes you implement in your own backend. They must authenticate the customer and apply
+your shop's pricing and cart rules.
 
 ```typescript
-const manager = new TecsafeWidgetManager(tokenCallback, addToCartHandler, new WidgetManagerConfig({
-  trackingAllowed: false,
-  languageRFC4647: 'en-US',
-  currencyCodeISO4217: 'USD',
-  taxIncluded: true,
-  debugWidget: true, // allows createDebugWidget()
-  sdkDebugger: true, // injects the debug overlay into your page
-}))
+import {
+  TecsafeWidgetManager,
+  IN_MESSAGES,
+  OUT_MESSAGES,
+  ArticleInfo,
+  LayoutPricesResponse,
+} from '@tecsafe/widget-sdk'
+
+export function registerShopEvents(manager: TecsafeWidgetManager): void {
+  manager.on(IN_MESSAGES.InMessageRequestArticleInfo, async (e) => {
+    await Promise.all(
+      e.event.articles.map(async (article) => {
+        const response = await fetch('/tecsafe/article-info', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(article),
+        })
+        const info: ArticleInfo | null = response.ok
+          ? await response.json()
+          : null
+        // Echo the complete identifier, including every supplied field.
+        e.respond(OUT_MESSAGES.OutMessageArticleInfo.create({ article, info }))
+      })
+    )
+  })
+
+  manager.on(IN_MESSAGES.InMessageRequestLayoutPrices, async (e) => {
+    const response = await fetch('/tecsafe/layout-prices', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(e.event),
+    })
+    if (!response.ok) throw new Error('Could not calculate layout prices')
+    const prices: LayoutPricesResponse = await response.json()
+    // The backend must preserve requestId and serviceIds.
+    e.respond(OUT_MESSAGES.OutMessageLayoutPrices.create(prices))
+  })
+
+  manager.on(IN_MESSAGES.InMessageCartPunchout, async (e) => {
+    let success = false
+    try {
+      const response = await fetch('/tecsafe/cart-punchout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(e.event),
+      })
+      success = response.ok // Return success only when the complete cart transfer succeeded.
+    } catch {
+      // Report transport failures to the widget too.
+    }
+    e.respond(OUT_MESSAGES.OutMessageCartPunchoutResult.create({ success }))
+  })
+}
 ```
 
-**`debugWidget`** unlocks
-[`createDebugWidget`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#createDebugWidget),
-which mounts the TECSAFE debug console in place of a regular widget. The console shows the
-widget side of the exchange and can send messages back to your page. Calling it while the flag
-is off throws.
+### Article information
 
-```javascript
-const debugWidget = manager.createDebugWidget(document.getElementById('widget-slot'))
+Each `request-article-info` payload contains `articles: ArticleIdentifier[]`. An identifier contains
+at least one of `gtin`, `manufacturerArticleNumber` or `supplierArticleNumber`.
+Reply once per requested article with `{ article, info }`. Send `info: null` when details are
+unavailable so the widget can show its fallback promptly.
+
+```typescript
+const info: ArticleInfo = {
+  hostShopArticleNumber: 'HOST-123', // Used in cart punchout.
+  availableStock: true, // Optional; omit when availability is unknown.
+  taxCategory: 'AA',
+  priceScales: [
+    {
+      fromQuantity: 1,
+      unitPrice: '38.50',
+      allowancesAndCharges: [
+        { reasonText: 'Summer-Rebate', type: 'percentage', value: '5' },
+      ],
+      effectiveUnitPrice: '36.58',
+    },
+  ],
+  images: ['https://shop.example/product.png'],
+  downloads: ['https://shop.example/manual.pdf'],
+}
 ```
 
-**`sdkDebugger`** injects a single collapsible overlay into the bottom right of your page. It
-logs the postMessage traffic of every widget in both directions, lets you pick which widget to
-watch, sends a preset or free-form message to the selected widget, and can reset a widget
-(destroy and show it again). The overlay renders inside a shadow root, so it neither inherits
-your styles nor affects them, and `destroyAll()` removes it again.
+Images and downloads are optional arrays of URL strings. Protect your article lookup API with
+appropriate rate limits.
 
-**`MESSAGE_PRESETS`** exposes one example payload per message type, keyed by the message type
-string, for messages without a payload `null`. Use it to prefill your own tooling or tests.
+### Layout prices and session settings
 
-```javascript
-import { MESSAGE_PRESETS, OUT_MESSAGES } from '@tecsafe/widget-sdk'
+`request-layout-prices` contains a `requestId`, `layout` with `priceScales` and `taxCategory`, and
+`tecsafeServices`. Each service includes its ID, localized title, category, mandatory flag, tax
+category, and unit pricing. The incoming TECSAFE prices are always **net EUR**, including any
+TECSAFE allowances and charges.
 
-const example = MESSAGE_PRESETS[OUT_MESSAGES.OutMessageSetToken.type] // { token: 'example' }
+Reply with `layout-prices`, preserving `requestId` and each service's `serviceId`. Convert the
+layout's quantity scales and service prices for the current customer. Preserve existing allowances
+and charges and include any shop adjustments. Service responses require pricing and the service ID;
+titles, categories and mandatory flags do not need to be repeated.
+
+Article info, layout price responses and cart punchout use the session's configured `currencyCode`,
+`priceMode` (`gross` or `net`) and tax categories. Tax category codes such as `S` and `AA` refer to
+`taxCategories`; shop-specific codes can be configured in `additionalTaxCategories`. When returning
+gross layout prices, include the corresponding `taxCategory` on the layout and services. Configure
+these session settings consistently with the widget's init configuration. Prices and tax settings
+are assumed to agree with that configuration; they are not independently negotiated in each event.
+
+Monetary unit prices and adjustment values use decimal strings. Every quantity scale contains
+`fromQuantity`, `unitPrice`, `allowancesAndCharges`, and `effectiveUnitPrice`.
+
+### Cart punchout
+
+`cart-punchout` replaces the previous constructor callback and `add-to-cart`/`added-to-cart` messages.
+It carries `{ positions, tecsafeTotal }`. Each position includes:
+
+- An opaque `positionId`, its `parentPositionId` (null for a layout), and a type:
+  `layout`, `tecsafeService`, or `hostShopArticle`.
+- Article `identifiers`, localized `description`, and a `quantity` with its relation to its parent
+  (`per-parent-unit`, `once-per-parent`, or `independent`), value, total and unit of measure.
+- `pricing` with unit price, allowances and charges, effective unit price, and line amount;
+  plus its `taxCategory`.
+- Optional `meta`, including material dimensions and colors, image URLs and item counts.
+
+`tecsafeTotal` is a number; position quantities and monetary amounts are strings. The exported
+`CartPunchoutRequest` and `CartPunchoutPosition` types describe the complete payload.
+Respond once with `OUT_MESSAGES.OutMessageCartPunchoutResult.create({ success })` after processing
+the entire transfer. The response is a normal widget event; it carries no HTTP status code.
+
+## Migrating an existing integration
+
+Update existing integrations for these API changes:
+
+- Construct the manager with `(customerTokenCallback, widgetManagerConfig)`. The constructor cart
+  callback and the `SingleAddToCartHandler` / `BulkAddToCartHandler` exports have been removed.
+- Replace `add-to-cart` / `added-to-cart` with the complete `cart-punchout` /
+  `cart-punchout-result` exchange, and register all three required event handlers before starting
+  widgets.
+- Use `language`, `currencyCode` and `priceMode: 'gross' | 'net'` instead of `languageRFC4647`,
+  `currencyCodeISO4217` and `taxIncluded`. Supply the required `taxCategories` (`S` and `AA`) and
+  `tecsafeArticles` array; use an empty array if the shop lists no TECSAFE articles.
+- Replace article identifier `ean` with `gtin`. Identifiers also support
+  `manufacturerArticleNumber` and `supplierArticleNumber`. Keep the `{ article, info }` response
+  wrapper and echo all fields of the requested identifier.
+- Update article info to use `hostShopArticleNumber`, optional `availableStock`, `taxCategory`, and
+  `priceScales`. A single `price` or numeric `stock` no longer matches the response contract.
+- Use each message definition's `preset()` for debug payloads. The old `MESSAGE_PRESETS` map is no
+  longer exported.
+
+## Customer tokens
+
+Your token callback should call an authenticated route in your backend. That route requests a
+customer token from TECSAFE's
+[/jwt/saleschannel-customer endpoint](https://ofcp-api-gateway.staging.tecsafe.de/api#/Auth%20controller/AuthController_loginSaleschannelCustomer_v1).
+Forward the callback's `oldToken` to TECSAFE when present so guest assets and customer sessions can
+be merged or upgraded correctly. The customer user ID must be unique within your sales channel;
+search tags can be used for customer groups and access rights.
+
+When the customer's login status changes, refresh the token:
+
+```typescript
+await manager.refreshToken()
+// Or provide a token already fetched by your application:
+await manager.refreshToken('<new-token>')
 ```
 
-## Widget Communication & Events
-
-### Widget communication architecture
-
-All communication between a widget and the hosting website functions via event-messaging. The Widget
-SDK does the heavy lifting of the entire event setup and exposes all relevant events for
-subscription and publishing accordingly.
-
-Events from hosting Website to the SDK are labelled as `OutMessages`, whereas events from the SDK to
-the hosting website are labelled as `InMessages`. Anything in the documentation that is prefixed
-with `Internal` refers to the internal event system plumbing and should not be relevant for
-integrating TECSAFE functionality.
-
-### Event Subscription
-
-All exposed events should be subscribed to and implemented to guarantee the intended user experience
-and data integrity. Please ensure to implement all
-[`@tecsafe/widget-sdk > InMessages`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html)`
-accordingly.
-
-## Architecture and Flows
-
-Understanding the internal flows of the Widget SDK ensures a smooth integration into your project,
-especially regarding authentication and cart interactions. The following section gives some
-intrspection and more detailled implementation examples for a better understanding.
-
-### Authentication Flow & Token Management
-
-The TECSAFE Widget manager requires a valid customer token to identify users and link configurations
-to their sessions. It handles both guest and registered customer sessions efficiently:
-
-- When the **SDK** requires a token, it delegates to the
-  [`customerTokenCallback`](https://tecsafe.github.io/widget-sdk/types/CustomerTokenCallback.html)
-  provided upon initialization. This naturally occurs when the session requires a token or when it
-  expires.
-- Your **frontend** is expected to set up the
-  [`customerTokenCallback`](https://tecsafe.github.io/widget-sdk/types/CustomerTokenCallback.html)
-  such that it will send token requests to your **backend's** custom token endpoint (see below). The
-  **SDK** provides the `oldToken` in the callback to maintain continuity. When your **backend**
-  requests a new `customerToken` from the **TECSAFE backend**, it is **strictly necessary** to
-  forward this `oldToken` as part of the request. The TECSAFE backend will then automatically merge
-  the sessions. This guarantees that any products configured during a guest session are seamlessly
-  transferred and assigned to a freshly logged in user or jump across states without data loss.
-- Your **backend** is expected to provide a custom token Endpoint. It should validate the user (or
-  guest session) via your own authentication logic (e.g., checking standard cookies/headers). Once
-  authenticated the backend should aggregate additional customer data (userID, email, search tags)
-  and tunnel there entire request through to **TECSAFE's backend** using
-  [/jwt/saleschannel-customer](https://ofcp-api-gateway.staging.tecsafe.de/api#/Auth%20controller/AuthController_loginSaleschannelCustomer_v1).
-- Please note:
-  - that your provided userID is the unique customer identifier per sales channel. Anything else can
-    be changed on each request to update the customer on the TECSAFE platform.
-  - that search tags are your flexible configuration option to cluster customers. These tags will be
-    available in the cockpit application to filter customers and also manage access right and
-    therefore should be carefully aligned with the responsible specialist department.
+The SDK caches tokens, refreshes them before expiry, and propagates new tokens to its widgets.
 
 ![Authentication Flow](mermaid/auth-flow.png)
 
-### Subscribing to Widget Events (e.g., RequestArticleInfo)
+## Cleanup and SPA lifecycle
 
-While the SDK handles internal events (like adding to the cart using your callback), you will often
-need to listen to and respond to specific widget events manually.
-**Even though every event is optional, it is highly recommended to implement as many as possible to
-significantly enhance the user experience.**
+Destroy the widget when leaving a page, or destroy all widgets when withdrawing consent or
+unmounting the integration. `destroyAll()` also clears token refresh timers and removes the debug
+overlay. Manager event registrations remain available if the manager is reused.
 
-A prime example is providing article details when the widget requests them. Advanced features like
-up-selling and proactive price previews strictly need the article info event to function correctly.
-Without implementing this event, the widget will only be able to show a "Price will be calculated
-in the cart" placeholder.
-
-- When a widget needs to render product details or prices, it emits an
-  [`InMessageRequestArticleInfo`](https://tecsafe.github.io/widget-sdk/variables/InMessageRequestArticleInfo.html) event.
-- Your application must subscribe to this event using the SDK's
-  [`.on()`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#on) methodology.
-- Once you retrieve the corresponding info from your backend or state, you respond directly using the
-  [`.respond()`](https://tecsafe.github.io/widget-sdk/interfaces/WidgetMessageEvent.html#respond)
-  function attached to the event payload.
-- You MUST respond in the [`OutMessageArticleInfo`](https://tecsafe.github.io/widget-sdk/variables/OutMessageArticleInfo.html)
-  format, providing either the details (like name and price) or `null` if the article is missing
-  (so the widget can quickly show fallback UI rather than timing out).
-
-![Article Info Flow](mermaid/article-info-flow.png)
-
-### Single Page Application lifecycle
-
-When navigating within a Single Page Application (SPA), it is crucial to handle the widget lifecycle
-properly to avoid duplicate instances or memory leaks. When a page transition occurs (e.g., leaving
-a product detail page), you should:
-
-1. Call [`.destroy()`](https://tecsafe.github.io/widget-sdk/classes/BaseWidget.html#destroy)
-   on the specific widget (e.g., if rendering a different product view), OR
-2. Call [`.destroyAll()`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#destroyAll)
-   on the manager if no widgets are needed on the next view. This safely cleans up and resets the internal token refresh timeout.
-
-**Manager Reset and Reuse:**
-If you used `destroyAll()`, the current `TecsafeWidgetManager` cleans up efficiently.
-While you _can_ recycle and reuse the manager for
-[`.createProductDetailWidget()`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html#createProductDetailWidget)
-loops again later on, it is generally easier to instantiate a **new**
-[`TecsafeWidgetManager`](https://tecsafe.github.io/widget-sdk/classes/TecsafeWidgetManager.html)
-upon mounting the integration point again. However, if your Vue/React wrapper remains globally alive
-across routes, reusing the existing `.destroyAll()`-cleaned manager is perfectly fine and maintains
-the browser session. The `.destroyAll()` should not be needed for a cleanly implemented SPA which always
-cleans up behind itself, using for example `onBeforeUnmount` or `useEffect` to destroy the widget,
-like in the `Vue.js example` below.
-
-![Widget Lifecycle](mermaid/widget-lifecycle.png)
-
-## Complete example implementation
-
-### Pure HTML
-
-```html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tecsafe Widget SDK</title>
-  </head>
-  <body>
-    <div id="product-detail-widget"></div>
-    <script src="https://unpkg.com/@tecsafe/widget-sdk@latest/dist/index.js"></script>
-    <script>
-      const manager = new TecsafeWidgetManager(
-        async (oldToken) => {
-          const response = await fetch('https://mybackend.com/tecsafe/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ oldToken }),
-          })
-          const json = await response.json()
-          return json.token
-        },
-        {
-          single: async (articleNumber, quantity, configurationId) => {
-            await fetch('https://mybackend.com/tecsafe/add-to-cart', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ articleNumber, quantity, configurationId })
-            });
-
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return true;
-          },
-        },
-        new WidgetManagerConfig({
-          trackingAllowed: true, //assuming that cookies have been accepted by user
-          languageRFC4647: 'en-US',
-          currencyCodeISO4217: 'USD',
-          taxIncluded: true,
-        })
-      )
-
-      manager.on(InMessageRequestArticleInfo, (e) => {
-        const response = await fetch('https://mybackend.com/tecsafe/articleInfo/' + { e.event.articleNumber })
-        const articleInfo = await response.json()
-
-        e.respond(OutMessageArticleInfo.create({
-          articleNumber: e.event.articleNumber,
-          info: {
-            ean: articleInfo.ean,
-            name: articleInfo.name,
-            price: articleInfo.price,
-            stock: articleInfo.stock,
-          },
-        }))
-      })
-
-      manager.createProductDetailWidget(
-        document.getElementById('product-detail-widget'),
-        'SKU-123456'
-      )
-    </script>
-  </body>
-</html>
+```typescript
+widget.destroy()
+// Or:
+await manager.destroyAll()
 ```
 
-### Vue.js
+For Vue, reuse the token callback, configuration and `registerShopEvents` above:
 
 ```html
 <template>
-  <shop-base>
-    <product-preview />
-    <div ref="container" />
-    <product-detail />
-    <product-comments />
-  </shop-base>
+  <div ref="container" />
 </template>
 
 <script lang="ts" setup>
   import { onMounted, onBeforeUnmount, ref } from 'vue'
   import { TecsafeWidgetManager } from '@tecsafe/widget-sdk'
+  import { registerShopEvents } from './tecsafe-events'
+  import { tokenCallback, widgetConfig } from './tecsafe-config'
 
   const container = ref<HTMLElement | null>(null)
-  const manager = ref<TecsafeWidgetManager | null>(null)
+  let manager: TecsafeWidgetManager | null = null
 
   onMounted(() => {
-    if (!container.value) throw new Error('Container not found')
-
-    manager.value = new TecsafeWidgetManager(
-      async (oldToken) => {
-          const response = await fetch('https://mybackend.com/tecsafe/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ oldToken }),
-          })
-          const json = await response.json()
-          return json.token
-        },
-      {
-        single: async (articleNumber, quantity, configurationId) => {
-          await fetch('https://mybackend.com/tecsafe/add-to-cart', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ articleNumber, quantity, configurationId })
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          return true;
-        },
-      },
-      new WidgetManagerConfig({
-        trackingAllowed: true,
-        languageRFC4647: 'en-US',
-        currencyCodeISO4217: 'USD',
-        taxIncluded: true,
-      })
-    )
-
-    manager.on(InMessageRequestArticleInfo, (e) => {
-      const response = await fetch('https://mybackend.com/tecsafe/articleInfo/' + { e.event.articleNumber })
-      const articleInfo = await response.json()
-
-      e.respond(OutMessageArticleInfo.create({
-        articleNumber: e.event.articleNumber,
-        info: {
-          ean: articleInfo.ean,
-          name: articleInfo.name,
-          price: articleInfo.price,
-          stock: articleInfo.stock,
-        },
-      }))
-    })
-
-    manager.createProductDetailWidget(
-      document.getElementById('product-detail-widget'),
-      'SKU-123456'
-    )
-
+    if (!container.value) throw new Error('Widget container not found')
+    manager = new TecsafeWidgetManager(tokenCallback, widgetConfig)
+    registerShopEvents(manager) // Register every required event before creating the widget.
+    manager.createProductDetailWidget(container.value, 'SKU-123456')
   })
 
   onBeforeUnmount(() => {
-    if (!manager.value) return
-    manager.value.destroyAll()
+    void manager?.destroyAll()
   })
 </script>
+```
+
+## Debug tooling
+
+Two development helpers are available through `WidgetManagerConfig`: `debugWidget: true` enables
+`createDebugWidget(element)`, and `sdkDebugger: true` injects a collapsible communication overlay.
+Both default to false and should be disabled in production.
+
+The debug widget can be created without business event handlers to troubleshoot an integration.
+Calling `createDebugWidget()` without the configuration flag throws an error.
+
+The overlay logs incoming and outgoing messages, can send arbitrary messages to a selected widget,
+and can reset a widget. It uses a shadow root, and `destroyAll()` removes it.
+Every message definition in `IN_MESSAGES` and `OUT_MESSAGES` exposes a `preset()` function for debug
+payloads; payload-free messages return null.
+
+```typescript
+const example = OUT_MESSAGES.OutMessageLayoutPrices.preset()
 ```

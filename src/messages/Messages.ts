@@ -14,10 +14,12 @@ import { OutMessageFullScreenClosed } from './out/FullScreenClosed'
 import { OutMessageSetMetaData } from './out/SetMetaData'
 
 import type { MessageDefinition } from './Contract'
-import { InMessageAddToCart } from './in/AddToCart'
+import { InMessageCartPunchout } from './in/CartPunchout'
+import { InMessageRequestLayoutPrices } from './in/RequestLayoutPrices'
 import { OutMessageArticleInfo } from './out/ArticleInfo'
 import { InMessageRequestArticleInfo } from './in/RequestArticleInfo'
-import { OutMessageAddedToCart } from './out/AddedToCart'
+import { OutMessageCartPunchoutResult } from './out/CartPunchoutResult'
+import { OutMessageLayoutPrices } from './out/LayoutPrices'
 import { InMessageRequestTecsafeArticles } from './in/RequestTecsafeArticles'
 import { OutMessageSetTecsafeArticles } from './out/SetTecsafeArticles'
 
@@ -26,6 +28,15 @@ import { OutMessageContextId } from './out/ContextId'
 // Keep these types local so Parcel emits resolvable relative module specifiers in declarations
 // for the inferred _IN_MESSAGES/_OUT_MESSAGES payload types.
 import type { ArticleIdentifier } from '../types/ArticleIdentifier'
+import type { ArticleInfo } from '../types/ArticleInfo'
+import type {
+  CartPunchoutRequest,
+  CartPunchoutResult,
+} from '../types/CartPunchout'
+import type {
+  LayoutPricesRequest,
+  LayoutPricesResponse,
+} from '../types/LayoutPrices'
 import type { TecsafeArticle } from '../types/TecsafeArticle'
 
 /**
@@ -50,7 +61,8 @@ export type MapStripImport<T> = {
  * @category InternalMessageMap
  */
 export const _IN_MESSAGES = {
-  InMessageAddToCart,
+  InMessageCartPunchout,
+  InMessageRequestLayoutPrices,
   InMessagePing,
   InMessageRequestToken,
   InMessageOpenFullScreen,
@@ -75,7 +87,8 @@ export const _OUT_MESSAGES = {
   OutMessageFullScreenClosed,
   OutMessageSetMetaData,
   OutMessageArticleInfo,
-  OutMessageAddedToCart,
+  OutMessageCartPunchoutResult,
+  OutMessageLayoutPrices,
   OutMessageSetTecsafeArticles,
 }
 

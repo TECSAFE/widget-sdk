@@ -9,7 +9,7 @@ import {
 import { BaseWidget } from '../../src/types/BaseWidget'
 import { WidgetManagerConfig } from '../../src/types/WidgetManagerConfig'
 import { TecsafeWidgetManager } from '../../src/TecsafeWidgetSDK'
-import { OutMessageAddedToCart } from '../../src/messages/out/AddedToCart'
+import { OutMessageCartPunchoutResult } from '../../src/messages/out/CartPunchoutResult'
 import { Logger } from '../../src/util/Logger'
 import { InMessagePing } from '../../src/messages/in/Ping'
 import { DebugTap } from '../../src/debug/DebugTap'
@@ -109,7 +109,7 @@ describe('BaseWidget', () => {
     const postMessageSpy = jest.spyOn(iframe.contentWindow!, 'postMessage')
 
     // valid origin
-    const msg = OutMessageAddedToCart.create({ linePosition: 1, success: true })
+    const msg = OutMessageCartPunchoutResult.create({ success: true })
     widget.sendMessage(msg)
     expect(postMessageSpy).toHaveBeenCalledWith(msg, 'https://test.com')
   })
@@ -125,16 +125,14 @@ describe('BaseWidget', () => {
       value: 'https://disallowed.com/widget',
     })
 
-    const msg = OutMessageAddedToCart.create({ linePosition: 1, success: true })
+    const msg = OutMessageCartPunchoutResult.create({ success: true })
     widget.sendMessage(msg)
     expect(postMessageSpy).not.toHaveBeenCalled()
   })
 
   it('should do nothing on sendMessage if iframe is null', () => {
     expect(() =>
-      widget.sendMessage(
-        OutMessageAddedToCart.create({ linePosition: 1, success: true })
-      )
+      widget.sendMessage(OutMessageCartPunchoutResult.create({ success: true }))
     ).not.toThrow()
   })
 
@@ -149,15 +147,15 @@ describe('BaseWidget', () => {
     const iframe = widget.getIframe()!
     const postMessageSpy = jest.spyOn(iframe.contentWindow!, 'postMessage')
 
-    widget.emit(OutMessageAddedToCart, { linePosition: 1, success: true })
+    widget.emit(OutMessageCartPunchoutResult, { success: true })
     expect(postMessageSpy).toHaveBeenCalled()
   })
 
   it('should register on, once, off properly', () => {
     const handler = jest.fn<any>()
-    widget.on(OutMessageAddedToCart, handler)
-    widget.off(OutMessageAddedToCart, handler)
-    widget.once(OutMessageAddedToCart, handler)
+    widget.on(OutMessageCartPunchoutResult, handler)
+    widget.off(OutMessageCartPunchoutResult, handler)
+    widget.once(OutMessageCartPunchoutResult, handler)
   })
 
   it('should process onMessage properly for valid type', async () => {
@@ -188,15 +186,13 @@ describe('BaseWidget', () => {
     const off = DebugTap.subscribe((e) => seen.push(e))
     widget.show()
 
-    widget.sendMessage(
-      OutMessageAddedToCart.create({ linePosition: 1, success: true })
-    )
+    widget.sendMessage(OutMessageCartPunchoutResult.create({ success: true }))
 
     off()
     expect(seen).toHaveLength(1)
     expect(seen[0].direction).toBe('out')
     expect(seen[0].widget).toBe(widget)
-    expect(seen[0].envelope.type).toBe('added-to-cart')
+    expect(seen[0].envelope.type).toBe('cart-punchout-result')
   })
 
   it('reports incoming messages to the debug tap', async () => {
@@ -239,9 +235,7 @@ describe('BaseWidget', () => {
   it('adds no listeners and no work when the debug tap is unused', () => {
     const spy = jest.spyOn(DebugTap, 'report')
     widget.show()
-    widget.sendMessage(
-      OutMessageAddedToCart.create({ linePosition: 1, success: true })
-    )
+    widget.sendMessage(OutMessageCartPunchoutResult.create({ success: true }))
     expect(spy).toHaveBeenCalled()
     expect((DebugTap as any).listeners).toHaveLength(0)
   })

@@ -13,15 +13,22 @@ export class RequiredWidgetManagerConfig {
   /**
    * The RFC 4647 language tag representing the user's preferred language, e.g. "en-US"
    */
-  public languageRFC4647!: string
+  public language!: string
   /**
    * The ISO 4217 currency code, e.g. "USD"
    */
-  public currencyCodeISO4217!: string
+  public currencyCode!: string
   /**
-   * Whether tax is included in the prices. Required to display correct pricing info - gross/net.
+   * The price mode for the shop, either 'gross' or 'net'.
    */
-  public taxIncluded!: boolean
+  public priceMode!: 'gross' | 'net'
+  /**
+   * The indicative tax categories for the shop, keyed by their respective codes.
+   */
+  public taxCategories!: {
+    S: number
+    AA: number
+  }
   /**
    * The TECSAFE articles listed by the shop. Sent to widgets via
    * {@link OutMessageSetTecsafeArticles}, either proactively or in response to a
@@ -56,15 +63,14 @@ export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
    * A list of allowed origins for the SDK to communicate with
    */
   public allowedOrigins: string[] = [
-    'app-ui.tecsafe.de',
-    'tecsafe.github.io',
-    'tecsafe.de',
-    'editor.tecsafe.de',
-    'ofcp-editor.stage.tecsafe.de',
-    'ofcp-editor.testing.tecsafe.de',
-    'ofcp-editor.tecsafe-local.de',
-    'example.com',
-  ] // TODO: update to live page
+    'https://app-ui.tecsafe.de',
+    'https://tecsafe.github.io',
+    'https://tecsafe.de',
+    'https://editor.tecsafe.de',
+    'https://ofcp-editor.stage.tecsafe.de',
+    'https://ofcp-editor.testing.tecsafe.de',
+    'https://ofcp-editor.tecsafe-local.de',
+  ]
 
   /**
    * Iframe styles.transition property
@@ -86,4 +92,16 @@ export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
    * and integration testing only - leave it off in production.
    */
   public sdkDebugger: boolean = false
+
+  /**
+   * The duration in seconds for which prices should be cached. Set to 0 to disable caching.
+   */
+  public priceCachingSeconds: number = 600
+
+  /**
+   * Additional indicative tax categories which the shop may have, keyed by their respective codes.
+   */
+  public additionalTaxCategories: {
+    [key: string]: number
+  } = {}
 }

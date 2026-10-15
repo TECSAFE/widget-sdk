@@ -1,6 +1,6 @@
 import { MessageDefinition, MessageEventHandler } from '../messages/Contract'
-import { MessageEnvelope } from 'src/types/MessageEnvelope'
-import { ISDK, IWidget } from 'src/types/Context'
+import { MessageEnvelope } from '../types/MessageEnvelope'
+import { ISDK, IWidget } from '../types/Context'
 
 /**
  * A simple event bus that can be extended by other classes
@@ -96,6 +96,8 @@ export abstract class EventBus {
    * @returns The list of message types
    */
   public getMessageListeners(): string[] {
-    return Array.from(this.listeners.keys())
+    return Array.from(this.listeners.entries())
+      .filter(([, listeners]) => listeners.length > 0)
+      .map(([type]) => type)
   }
 }

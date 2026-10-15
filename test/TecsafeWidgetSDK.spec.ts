@@ -8,17 +8,20 @@ import {
 } from '@jest/globals'
 import { TecsafeWidgetManager } from '../src/TecsafeWidgetSDK'
 import { WidgetManagerConfig } from '../src/types/WidgetManagerConfig'
-import { IN_MESSAGES } from '../src/messages/Messages'
-import type {
-  SingleAddToCartHandler,
-  BulkAddToCartHandler,
-  AddToCartHandler,
-  CustomerTokenCallback,
-} from '../src'
+import { IN_MESSAGES, OUT_MESSAGES } from '../src/messages/Messages'
+import { readUrlParams, writeUrlParams } from '../src/util/UrlParamRW'
+const requiredMessages = () => [
+  IN_MESSAGES.InMessageCartPunchout,
+  IN_MESSAGES.InMessageRequestArticleInfo,
+  IN_MESSAGES.InMessageRequestLayoutPrices,
+]
+
+const registerRequired = (manager: TecsafeWidgetManager) => {
+  for (const message of requiredMessages()) manager.on(message as any, () => {})
+}
 
 describe('TecsafeWidgetManager', () => {
   let mockTokenCallback: any
-  let mockAddToCartCallback: any
   let mockConfig: WidgetManagerConfig
 
   beforeEach(() => {
@@ -30,13 +33,12 @@ describe('TecsafeWidgetManager', () => {
     mockTokenCallback = jest
       .fn<(oldToken?: string) => Promise<string>>()
       .mockResolvedValue(validTestToken)
-    mockAddToCartCallback = jest
-      .fn<() => Promise<boolean>>()
-      .mockResolvedValue(true)
     mockConfig = {
       widgetBaseURL: 'https://test.tecsafe.com/widget',
       allowedOrigins: ['https://test.tecsafe.com'],
     } as WidgetManagerConfig
+
+    window.history.replaceState({}, '', 'http://localhost/')
 
     // Mock localStorage
     const localStorageMock = (() => {
@@ -62,11 +64,7 @@ describe('TecsafeWidgetManager', () => {
   })
 
   it('should initialize correctly with valid config', () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     expect(manager).toBeDefined()
     expect(manager.getConfig()).toBe(mockConfig)
     expect(manager.getBrowserId()).toBeDefined()
@@ -79,43 +77,29 @@ describe('TecsafeWidgetManager', () => {
   it('should throw an error if widgetBaseURL is not in allowedOrigins', () => {
     mockConfig.allowedOrigins = ['https://other.com']
     expect(() => {
-      new TecsafeWidgetManager(
-        mockTokenCallback,
-        mockAddToCartCallback,
-        mockConfig
-      )
+      new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     }).toThrow('The widgetBaseURL must be in the allowedOrigins list')
   })
 
   it('should resume browserId from localStorage if available', () => {
     window.localStorage.setItem('tecsafe-bid', 'existing-bid')
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     expect(manager.getBrowserId()).toBe('existing-bid')
   })
 
   it('should create product detail widget', () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     const el = document.createElement('div')
+    registerRequired(manager)
     const widget = manager.createProductDetailWidget(el, 'test-article-123')
     expect(widget).toBeDefined()
     expect(manager.getWidgets()).toContain(widget)
   })
 
   it('should destroy all widgets', async () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     const cartEl = document.createElement('div')
+    registerRequired(manager)
     manager.createProductDetailWidget(cartEl, 'test-article-123')
 
     expect(manager.getWidgets().length).toBe(1)
@@ -130,17 +114,14 @@ describe('TecsafeWidgetManager', () => {
   })
 
   it('should open and close full screen', () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     const appWidget = manager.getAppWidget()
     jest.spyOn(appWidget, 'setUrl').mockImplementation(() => {})
     jest.spyOn(appWidget, 'hide').mockImplementation(() => {})
     jest.spyOn(appWidget, 'destroy').mockImplementation(() => {})
     const sendSpy = jest.spyOn(manager, 'sendToAllWidgets')
 
+    registerRequired(manager)
     manager.openFullScreen('https://test.com')
     expect(appWidget.setUrl).toHaveBeenCalledWith('https://test.com')
     expect(sendSpy).toHaveBeenCalled()
@@ -153,23 +134,16 @@ describe('TecsafeWidgetManager', () => {
   })
 
   it('should create custom page widget', () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     const el = document.createElement('div')
+    registerRequired(manager)
     const widget = manager.createCustomPageWidget(el)
     expect(widget).toBeDefined()
     expect(manager.getWidgets()).toContain(widget)
   })
 
   it('should refuse to create the debug widget when the flag is off', () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     expect(() =>
       manager.createDebugWidget(document.createElement('div'))
     ).toThrow(
@@ -178,11 +152,10 @@ describe('TecsafeWidgetManager', () => {
   })
 
   it('should create and register the debug widget when the flag is on', () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      { ...mockConfig, debugWidget: true } as WidgetManagerConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, {
+      ...mockConfig,
+      debugWidget: true,
+    } as WidgetManagerConfig)
     const el = document.createElement('div')
     document.body.appendChild(el)
     const widget = manager.createDebugWidget(el)
@@ -193,11 +166,10 @@ describe('TecsafeWidgetManager', () => {
   })
 
   it('should tear the debug widget down in destroyAll', async () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      { ...mockConfig, debugWidget: true } as WidgetManagerConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, {
+      ...mockConfig,
+      debugWidget: true,
+    } as WidgetManagerConfig)
     const el = document.createElement('div')
     document.body.appendChild(el)
     const widget = manager.createDebugWidget(el)
@@ -208,17 +180,13 @@ describe('TecsafeWidgetManager', () => {
 
   it('does not touch the page when sdkDebugger is off', () => {
     document.body.innerHTML = ''
-    new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     expect(document.body.childElementCount).toBe(0)
   })
 
   it('mounts the debug overlay when sdkDebugger is on', () => {
     document.body.innerHTML = ''
-    new TecsafeWidgetManager(mockTokenCallback, mockAddToCartCallback, {
+    new TecsafeWidgetManager(mockTokenCallback, {
       ...mockConfig,
       sdkDebugger: true,
     } as WidgetManagerConfig)
@@ -228,24 +196,16 @@ describe('TecsafeWidgetManager', () => {
 
   it('tears the debug overlay down in destroyAll', async () => {
     document.body.innerHTML = ''
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      {
-        ...mockConfig,
-        sdkDebugger: true,
-      } as WidgetManagerConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, {
+      ...mockConfig,
+      sdkDebugger: true,
+    } as WidgetManagerConfig)
     await manager.destroyAll()
     expect(document.body.childElementCount).toBe(0)
   })
 
   it('should test token methods', async () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
 
     const token = await manager.getToken()
     expect(token).toBeDefined()
@@ -259,21 +219,13 @@ describe('TecsafeWidgetManager', () => {
 
   it('should pass old token if it exists in local storage', async () => {
     window.localStorage.setItem('tecsafe-token', 'old-test-token')
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     await manager.getToken()
     expect(mockTokenCallback).toHaveBeenCalledWith('old-test-token')
   })
 
   it('should handle on/once/off properly', () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     const handler = jest.fn<any>()
     manager.on({ type: 'test' } as any, handler)
     manager.once({ type: 'test' } as any, handler)
@@ -281,11 +233,7 @@ describe('TecsafeWidgetManager', () => {
   })
 
   it('should handle emit and sendToAllWidgets properly', () => {
-    const manager = new TecsafeWidgetManager(
-      mockTokenCallback,
-      mockAddToCartCallback,
-      mockConfig
-    )
+    const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
     const spy = jest
       .spyOn(manager, 'sendToAllWidgets')
       .mockImplementation(() => {})
@@ -293,115 +241,201 @@ describe('TecsafeWidgetManager', () => {
     expect(spy).toHaveBeenCalled()
   })
 
-  describe('add-to-cart handling', () => {
-    const positions = [
-      {
-        linePosition: 1,
-        articleNumber: 'ART-1',
-        quantity: 2,
-        configurationId: 'cfg-1',
-      },
-      { linePosition: 2, articleNumber: 'ART-2', quantity: 1 },
-    ]
-
-    const flushAsync = () => new Promise((resolve) => setTimeout(resolve, 0))
-
-    it('registers the add-to-cart listener even without tecsafe url params', () => {
-      const manager = new TecsafeWidgetManager(
-        mockTokenCallback,
-        mockAddToCartCallback,
-        mockConfig
-      )
-      expect(manager.getMessageListeners()).toContain('add-to-cart')
+  describe('required business events', () => {
+    it('does not install business handlers in the constructor', () => {
+      const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+      expect(manager.getMessageListeners()).toEqual([])
     })
 
-    it('calls the single handler per position and responds per position', async () => {
-      const single = jest
-        .fn<
-          (
-            articleNumber: string,
-            quantity: number,
-            configurationId?: string
-          ) => Promise<boolean>
-        >()
-        .mockResolvedValue(true)
-      const manager = new TecsafeWidgetManager(
-        mockTokenCallback,
-        { single },
-        mockConfig
-      )
-      const widget = { sendMessage: jest.fn() } as any
+    it.each(['product', 'custom', 'fullscreen'])(
+      'rejects %s creation with all missing events before DOM changes',
+      (kind) => {
+        const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+        const el = document.createElement('div')
+        const addListener = jest.spyOn(window, 'addEventListener')
+        const create = () => {
+          if (kind === 'product') manager.createProductDetailWidget(el, 'ART-1')
+          else if (kind === 'custom') manager.createCustomPageWidget(el)
+          else manager.openFullScreen('https://test.tecsafe.com/editor')
+        }
+        expect(create).toThrow(
+          /cart-punchout.*request-article-info.*request-layout-prices/
+        )
+        expect(create).toThrow(/manager\.on/)
+        expect(el.childElementCount).toBe(0)
+        expect(manager.getWidgets()).toHaveLength(0)
+        expect(manager.getAppWidget().getIframe()).toBeNull()
+        expect(addListener).not.toHaveBeenCalled()
+        addListener.mockRestore()
+      }
+    )
 
+    it('reports only missing handlers and rechecks after off()', () => {
+      const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+      registerRequired(manager)
+      const handler = () => {}
+      manager.on(IN_MESSAGES.InMessageCartPunchout, handler)
+      manager.off(IN_MESSAGES.InMessageCartPunchout, handler)
+      expect(() =>
+        manager.createCustomPageWidget(document.createElement('div'))
+      ).not.toThrow()
+      const articleHandler = () => {}
+      const fresh = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+      fresh.on(IN_MESSAGES.InMessageRequestArticleInfo, articleHandler)
+      fresh.on(IN_MESSAGES.InMessageCartPunchout, handler)
+      fresh.on(IN_MESSAGES.InMessageRequestLayoutPrices, handler)
+      fresh.off(IN_MESSAGES.InMessageRequestArticleInfo, articleHandler)
+      expect(() =>
+        fresh.createCustomPageWidget(document.createElement('div'))
+      ).toThrow(/Missing required event handlers: request-article-info\./)
+    })
+
+    it('rechecks consumed once handlers', () => {
+      const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+      manager.on(IN_MESSAGES.InMessageRequestArticleInfo, () => {})
+      manager.on(IN_MESSAGES.InMessageRequestLayoutPrices, () => {})
+      manager.once(IN_MESSAGES.InMessageCartPunchout, () => {})
+      const widget = manager.createCustomPageWidget(
+        document.createElement('div')
+      )
       manager._triggerListeners(
-        'add-to-cart',
-        IN_MESSAGES.InMessageAddToCart.create({ positions }),
+        'cart-punchout',
+        IN_MESSAGES.InMessageCartPunchout.create({
+          positions: [],
+          tecsafeTotal: 0,
+        }),
         widget
       )
-      await flushAsync()
-
-      expect(single).toHaveBeenCalledTimes(2)
-      expect(single).toHaveBeenNthCalledWith(1, 'ART-1', 2, 'cfg-1')
-      expect(single).toHaveBeenNthCalledWith(2, 'ART-2', 1, undefined)
-      expect(widget.sendMessage).toHaveBeenCalledWith({
-        type: 'added-to-cart',
-        payload: { linePosition: 1, success: true },
-      })
-      expect(widget.sendMessage).toHaveBeenCalledWith({
-        type: 'added-to-cart',
-        payload: { linePosition: 2, success: true },
-      })
+      expect(() =>
+        manager.createCustomPageWidget(document.createElement('div'))
+      ).toThrow(/cart-punchout/)
     })
 
-    it('calls the bulk handler once with all positions and responds per result', async () => {
-      const bulk = jest
-        .fn<
-          (
-            items: {
-              linePosition: number
-              articleNumber: string
-              quantity: number
-              configurationId?: string
-            }[]
-          ) => Promise<{ linePosition: number; success: boolean }[]>
-        >()
-        .mockResolvedValue([
-          { linePosition: 1, success: true },
-          { linePosition: 2, success: false },
-        ])
-      const manager = new TecsafeWidgetManager(
-        mockTokenCallback,
-        { bulk },
-        mockConfig
+    it('restores fullscreen after synchronous event registration', async () => {
+      localStorage.setItem('tecsafe-bid', 'existing-bid')
+      writeUrlParams({
+        browserId: 'existing-bid',
+        url: 'https://test.tecsafe.com/editor',
+      })
+      const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+      expect(manager.getAppWidget().getIframe()).toBeNull()
+      registerRequired(manager)
+      await Promise.resolve()
+      expect(manager.getAppWidget().getIframe()?.src).toBe(
+        'https://test.tecsafe.com/editor'
       )
-      const widget = { sendMessage: jest.fn() } as any
+      await manager.destroyAll()
+    })
 
+    it.each(['closeFullScreen', 'destroyFullScreen', 'destroyAll'] as const)(
+      'cancels pending fullscreen and clears persisted URL on %s',
+      async (method) => {
+        localStorage.setItem('tecsafe-bid', 'existing-bid')
+        writeUrlParams({
+          browserId: 'existing-bid',
+          url: 'https://test.tecsafe.com/editor',
+        })
+        const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+        registerRequired(manager)
+        await manager[method]()
+        await Promise.resolve()
+        expect(manager.getAppWidget().getIframe()).toBeNull()
+        expect(readUrlParams()).toEqual({ browserId: '', url: '' })
+      }
+    )
+
+    it.each([
+      [
+        IN_MESSAGES.InMessageRequestArticleInfo,
+        OUT_MESSAGES.OutMessageArticleInfo,
+      ],
+      [
+        IN_MESSAGES.InMessageRequestLayoutPrices,
+        OUT_MESSAGES.OutMessageLayoutPrices,
+      ],
+      [
+        IN_MESSAGES.InMessageCartPunchout,
+        OUT_MESSAGES.OutMessageCartPunchoutResult,
+      ],
+    ])(
+      'routes $type browser messages and targets the requesting iframe',
+      async (request, response) => {
+        const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+        registerRequired(manager)
+        const first = document.createElement('div')
+        const second = document.createElement('div')
+        document.body.append(first, second)
+        const widget = manager.createCustomPageWidget(first)
+        const other = manager.createCustomPageWidget(second)
+        const postMessage = jest.spyOn(
+          widget.getIframe()!.contentWindow!,
+          'postMessage'
+        )
+        const otherPostMessage = jest.spyOn(
+          other.getIframe()!.contentWindow!,
+          'postMessage'
+        )
+        const reply = response.create(response.preset() as never)
+        const handler = jest.fn((e: any) => e.respond(reply))
+        manager.on(request as any, handler)
+        const data = request.create(request.preset() as never)
+
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            origin: 'https://foreign.example',
+            source: widget.getIframe()!.contentWindow,
+            data,
+          })
+        )
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            origin: 'https://test.tecsafe.com',
+            source: window,
+            data,
+          })
+        )
+        expect(handler).not.toHaveBeenCalled()
+
+        window.dispatchEvent(
+          new MessageEvent('message', {
+            origin: 'https://test.tecsafe.com',
+            source: widget.getIframe()!.contentWindow,
+            data,
+          })
+        )
+        await Promise.resolve()
+        expect(handler).toHaveBeenCalledTimes(1)
+        expect(handler.mock.calls[0][0].event).toEqual(data.payload)
+        expect(postMessage).toHaveBeenCalledWith(
+          reply,
+          'https://test.tecsafe.com'
+        )
+        expect(otherPostMessage).not.toHaveBeenCalled()
+        await manager.destroyAll()
+        postMessage.mockRestore()
+        otherPostMessage.mockRestore()
+      }
+    )
+
+    it('routes punchout to a registered handler and responds to the requesting widget', () => {
+      const manager = new TecsafeWidgetManager(mockTokenCallback, mockConfig)
+      const payload = { positions: [], tecsafeTotal: 299.25 }
+      manager.on(IN_MESSAGES.InMessageCartPunchout, (e) => {
+        expect(e.event).toEqual(payload)
+        e.respond(
+          OUT_MESSAGES.OutMessageCartPunchoutResult.create({ success: true })
+        )
+      })
+      const widget = { sendMessage: jest.fn() } as any
       manager._triggerListeners(
-        'add-to-cart',
-        IN_MESSAGES.InMessageAddToCart.create({ positions }),
+        'cart-punchout',
+        IN_MESSAGES.InMessageCartPunchout.create(payload),
         widget
       )
-      await flushAsync()
-
-      expect(bulk).toHaveBeenCalledTimes(1)
-      expect(bulk).toHaveBeenCalledWith(positions)
       expect(widget.sendMessage).toHaveBeenCalledWith({
-        type: 'added-to-cart',
-        payload: { linePosition: 1, success: true },
+        type: 'cart-punchout-result',
+        payload: { success: true },
       })
-      expect(widget.sendMessage).toHaveBeenCalledWith({
-        type: 'added-to-cart',
-        payload: { linePosition: 2, success: false },
-      })
-    })
-
-    it('exposes the handler types via the package entrypoint', () => {
-      const single: SingleAddToCartHandler = { single: async () => true }
-      const bulk: BulkAddToCartHandler = { bulk: async () => [] }
-      const either: AddToCartHandler = single
-      const tokenCb: CustomerTokenCallback = async () => 'token'
-      expect('single' in either).toBe(true)
-      expect(typeof bulk.bulk).toBe('function')
-      expect(typeof tokenCb).toBe('function')
     })
   })
 })

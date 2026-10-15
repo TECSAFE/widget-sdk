@@ -4,9 +4,8 @@
     "isolatedModules": false,
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "Node",
-    "baseUrl": ".",
-    "ignoreDeprecations": "5.0"
+    "moduleResolution": "Bundler",
+    "strict": true
   },
   "exclude": [
     "dist",

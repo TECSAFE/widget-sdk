@@ -37,6 +37,7 @@
     "build:mermaid": "node build-mermaid.mjs",
     "doc": "typedoc",
     "test": "jest",
+    "typecheck": "tsc --noEmit",
     "lint": "prettier \"src/**/*.ts\" \"test/**/*.ts\" --check",
     "lint:fix": "prettier \"src/**/*.ts\" \"test/**/*.ts\" --write"
   },

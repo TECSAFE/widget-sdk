@@ -27,9 +27,9 @@ export class CustomPageWidget extends BaseWidget {
     protected readonly contextId?: string
   ) {
     super(config, el, api)
-    if (this.contextId)
+    if (contextId)
       this.on(InMessagePing, (e) => {
-        e.respond(OutMessageContextId.create({ contextId: this.contextId }))
+        e.respond(OutMessageContextId.create({ contextId }))
       })
   }
 

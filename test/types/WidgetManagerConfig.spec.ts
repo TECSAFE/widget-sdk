@@ -3,13 +3,21 @@ import { WidgetManagerConfig } from '../../src/types/WidgetManagerConfig'
 
 const required = {
   trackingAllowed: false,
-  languageRFC4647: 'de-DE',
-  currencyCodeISO4217: 'EUR',
-  taxIncluded: true,
+  language: 'de-DE',
+  currencyCode: 'EUR',
+  priceMode: 'gross' as const,
+  taxCategories: { S: 19, AA: 7 },
   tecsafeArticles: [{ productNumber: 'TS-1', price: '9.99' }],
 }
 
 describe('WidgetManagerConfig', () => {
+  it('allows its default widget URL', () => {
+    const config = new WidgetManagerConfig(required)
+    expect(config.allowedOrigins).toContain(
+      new URL(config.widgetBaseURL).origin
+    )
+  })
+
   it('defaults both debug flags to false', () => {
     const config = new WidgetManagerConfig(required)
     expect(config.debugWidget).toBe(false)
