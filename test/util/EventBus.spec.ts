@@ -93,4 +93,10 @@ describe('EventBus', () => {
       eventBus.off(mockMessage, handler)
     }).not.toThrow()
   })
+  it('does not advertise events after the last listener is removed', () => {
+    const handler = jest.fn<any>()
+    eventBus.on(mockMessage, handler)
+    eventBus.off(mockMessage, handler)
+    expect(eventBus.getMessageListeners()).toEqual([])
+  })
 })

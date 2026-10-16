@@ -1,4 +1,4 @@
-import { IAppWidget } from 'src/types/Context'
+import { IAppWidget } from '../types/Context'
 import { BaseWidget } from '../types/BaseWidget'
 
 import { writeUrlParams, clearUrlParams } from '../util/UrlParamRW'

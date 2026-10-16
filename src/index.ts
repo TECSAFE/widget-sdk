@@ -1,7 +1,10 @@
 import { TecsafeWidgetManager } from './TecsafeWidgetSDK'
 
 export * from './TecsafeWidgetSDK'
-export * from './types/AddToCartHandler'
+export * from './types/ArticleInfo'
+export * from './types/Pricing'
+export * from './types/LayoutPrices'
+export * from './types/CartPunchout'
 export * from './types/BaseWidget'
 export * from './types/Context'
 export * from './types/CustomerTokenCallback'

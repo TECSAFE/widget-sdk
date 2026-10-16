@@ -13,7 +13,6 @@ import { CustomerTokenCallback } from './types/CustomerTokenCallback'
 
 import { EventBus } from './util/EventBus'
 import { Logger } from './util/Logger'
-import { AddToCartHandler } from './types/AddToCartHandler'
 
 import { parseCustomerJwt } from './util/ParseCustomerJwt'
 
@@ -35,16 +34,12 @@ export class TecsafeWidgetManager extends EventBus {
    *                              This function handles initial as well as consecutive token
    *                              creation. If a previous token exists it must be handed in for
    *                              proper session upgrading.
-   * @param addToCartCallback A function that adds product(s) to the cart. It is left tpo the
-   *                          implementor to chose a single or bulk processing given their frameworks prerequisites. The
-   *                          function will return a success status.
    * @param widgetManagerConfig The SDK configuration containing tracking and regional settings for
    *                            customer specific app optimization.
    * @throws An error if the configuration is invalid.
    */
   constructor(
     private readonly customerTokenCallback: CustomerTokenCallback,
-    private readonly addToCartCallback: AddToCartHandler,
     private readonly widgetManagerConfig: WidgetManagerConfig
   ) {
     super()
@@ -57,37 +52,12 @@ export class TecsafeWidgetManager extends EventBus {
       document.createElement('div'),
       this
     )
-    this.on(IN_MESSAGES.InMessageAddToCart, async (e) => {
-      const handler = this.addToCartCallback
-      const positions = e.event.positions
-      if ('bulk' in handler) {
-        const results = await handler.bulk(positions)
-        results.forEach((result) => {
-          e.respond(OUT_MESSAGES.OutMessageAddedToCart.create(result))
-        })
-      } else {
-        await Promise.all(
-          positions.map(async (pos) => {
-            const success = await handler.single(
-              pos.articleNumber,
-              pos.quantity,
-              pos.configurationId
-            )
-            e.respond(
-              OUT_MESSAGES.OutMessageAddedToCart.create({
-                linePosition: pos.linePosition,
-                success,
-              })
-            )
-          })
-        )
-      }
-    })
     if (widgetManagerConfig.sdkDebugger) {
       this.debugOverlay = new DebugManagerOverlay(this)
     }
     // To don't make it to obvious thats a "browserID"
     // We shorten it to "bid"
+    // Note: Its not for tracking purposes, but rather a feature to prevent accidental url sharing
     this.browserId =
       localStorage.getItem('tecsafe-bid') ?? Math.random().toString(36).slice(2)
     if (!localStorage.getItem('tecsafe-bid')) {
@@ -100,11 +70,43 @@ export class TecsafeWidgetManager extends EventBus {
       Logger.getInstance().warn('Browser ID mismatch, clearing URL params')
       return
     }
-    try {
-      this.openFullScreen(params.url)
-    } catch (e) {
-      Logger.getInstance().error('Failed to open full screen:', String(e))
+    // Allow the host to register required handlers immediately after construction.
+    this.pendingFullScreenUrl = params.url
+    queueMicrotask(() => {
+      if (!this.pendingFullScreenUrl) return
+      const url = this.pendingFullScreenUrl
+      this.pendingFullScreenUrl = null
+      try {
+        this.openFullScreen(url)
+      } catch (e) {
+        Logger.getInstance().error('Failed to open full screen:', String(e))
+      }
+    })
+  }
+
+  /** Business events every shop integration must handle before opening a widget. */
+  private static readonly requiredEvents = [
+    IN_MESSAGES.InMessageCartPunchout,
+    IN_MESSAGES.InMessageRequestArticleInfo,
+    IN_MESSAGES.InMessageRequestLayoutPrices,
+  ] as const
+
+  private checkRequiredEvents(): void {
+    const missing = TecsafeWidgetManager.requiredEvents.filter(
+      (message) => !this.listeners.get(message.type)?.length
+    )
+    if (missing.length) {
+      throw new Error(
+        `Missing required event handlers: ${missing.map((message) => message.type).join(', ')}. ` +
+          'Register each handler with manager.on(IN_MESSAGES.<message>, handler) before creating or opening a widget.'
+      )
     }
+  }
+
+  private cancelPendingFullScreen(): void {
+    if (!this.pendingFullScreenUrl) return
+    this.pendingFullScreenUrl = null
+    clearUrlParams()
   }
 
   private browserId!: string
@@ -116,6 +118,7 @@ export class TecsafeWidgetManager extends EventBus {
   private tokenPromise: Promise<string> | null = null
   private refreshTimeoutId: number | null = null
   private fullScreenData: any
+  private pendingFullScreenUrl: string | null = null
 
   public getBrowserId(): string {
     return this.browserId
@@ -124,10 +127,12 @@ export class TecsafeWidgetManager extends EventBus {
   /**
    * Opens the AppWidget in full screen mode on the provided url
    * @param url The url to open in full screen
-   * @throws An error if the url is not in the allowedOrigins list
+   * @throws An error if required event handlers are missing or the url is not in the allowedOrigins list
    * @see {@link AppWidget}
    */
   public openFullScreen(url: string): void {
+    this.checkRequiredEvents()
+    this.pendingFullScreenUrl = null
     this.appWidget.setUrl(url)
     this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenOpened.create())
   }
@@ -137,6 +142,7 @@ export class TecsafeWidgetManager extends EventBus {
    * @see {@link AppWidget}
    */
   public closeFullScreen(): void {
+    this.cancelPendingFullScreen()
     this.appWidget.hide()
     this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenClosed.create())
   }
@@ -146,6 +152,7 @@ export class TecsafeWidgetManager extends EventBus {
    * @see {@link AppWidget}
    */
   public destroyFullScreen(): void {
+    this.cancelPendingFullScreen()
     this.appWidget.destroy()
     this.sendToAllWidgets(OUT_MESSAGES.OutMessageFullScreenClosed.create())
   }
@@ -278,6 +285,7 @@ export class TecsafeWidgetManager extends EventBus {
    * Destroys all widgets, and resets the SDK to its initial state
    */
   public async destroyAll(): Promise<void> {
+    this.cancelPendingFullScreen()
     if (this.refreshTimeoutId) clearTimeout(this.refreshTimeoutId)
     this.refreshTimeoutId = null
     this.appWidget.destroy()
@@ -304,12 +312,14 @@ export class TecsafeWidgetManager extends EventBus {
    * @param articleNumber The articleNumber of the respectively promoted article on the PDP. Make
    *                      sure to configure that article in TECSAFE's cockkpit to provide the
    *                      necessary layout context.
+   * @throws An error listing missing required event handlers
    * @returns The product detail widget
    */
   public createProductDetailWidget(
     el: HTMLElement,
     articleNumber: string
   ): ProductDetailWidget {
+    this.checkRequiredEvents()
     return this.createWidget(
       new ProductDetailWidget(this.widgetManagerConfig, el, this, articleNumber)
     )
@@ -320,12 +330,14 @@ export class TecsafeWidgetManager extends EventBus {
    * @param el The element to attach the widget to
    * @param contextId A custom contextID which needs to be references in TECSAFE's cockpit to
    *                  provide the necessary layout context.
+   * @throws An error listing missing required event handlers
    * @returns The custom page widget
    */
   public createCustomPageWidget(
     el: HTMLElement,
     contextId?: string
   ): CustomPageWidget {
+    this.checkRequiredEvents()
     return this.createWidget(
       new CustomPageWidget(this.widgetManagerConfig, el, this, contextId)
     )
