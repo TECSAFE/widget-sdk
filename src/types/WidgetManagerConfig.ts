@@ -67,7 +67,7 @@ export class WidgetManagerConfig extends RequiredWidgetManagerConfig {
     'https://tecsafe.github.io',
     'https://tecsafe.de',
     'https://editor.tecsafe.de',
-    'https://ofcp-editor.stage.tecsafe.de',
+    'https://ofcp-editor.staging.tecsafe.de',
     'https://ofcp-editor.testing.tecsafe.de',
     'https://ofcp-editor.tecsafe-local.de',
   ]
