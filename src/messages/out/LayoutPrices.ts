@@ -3,7 +3,8 @@ import { LayoutPricesResponse } from '../../types/LayoutPrices'
 
 /**
  * Customer-specific layout and service prices. Echo the requestId and serviceIds.
- * Prices and taxes follow the session configuration.
+ * Prices and taxes follow the session configuration. If pricing fails, echo requestId
+ * with success: false and an optional error message, omitting all price data.
  * @category OutMessage
  * @see {@link InMessageRequestLayoutPrices}
  */
@@ -12,6 +13,7 @@ export const OutMessageLayoutPrices = defineMessage<LayoutPricesResponse>(
   undefined,
   () => ({
     requestId: 'example',
+    success: true,
     layout: {
       priceScales: [
         {

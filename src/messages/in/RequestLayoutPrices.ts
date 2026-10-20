@@ -3,7 +3,8 @@ import { LayoutPricesRequest } from '../../types/LayoutPrices'
 
 /**
  * Requests customer-specific layout and service prices. Incoming prices are net EUR;
- * respond in the currency and price mode of the session configuration.
+ * respond in the currency and price mode of the session configuration. Always reply,
+ * including success: false and the original requestId when prices cannot be calculated.
  * @category InMessage
  * @see {@link OutMessageLayoutPrices}
  */

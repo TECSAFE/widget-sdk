@@ -28,8 +28,11 @@ export type LayoutPricesRequest = {
  * Preserve TECSAFE allowances and charges and include any shop adjustments.
  * Tax categories, when supplied, refer to the session configuration.
  */
-export type LayoutPricesResponse = {
+export type LayoutPricesSuccessResponse = {
   requestId: string
+  /** Omitted by existing integrations; both absence and true indicate success. */
+  success?: true
+  error?: never
   layout: {
     priceScales: PriceScale[]
     taxCategory?: TaxCategory
@@ -39,3 +42,18 @@ export type LayoutPricesResponse = {
     taxCategory?: TaxCategory
   })[]
 }
+
+/** Pricing could not be calculated. Echo requestId and omit all price data. */
+export type LayoutPricesFailureResponse = {
+  requestId: string
+  success: false
+  /** Optional human-readable failure message suitable for the customer. */
+  error?: string
+  layout?: never
+  tecsafeServices?: never
+}
+
+/** Check success === false before reading layout or service prices. */
+export type LayoutPricesResponse =
+  | LayoutPricesSuccessResponse
+  | LayoutPricesFailureResponse
