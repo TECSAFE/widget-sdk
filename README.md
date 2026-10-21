@@ -134,14 +134,23 @@ export function registerShopEvents(manager: TecsafeWidgetManager): void {
   })
 
   manager.on(IN_MESSAGES.InMessageRequestLayoutPrices, async (e) => {
-    const response = await fetch('/tecsafe/layout-prices', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(e.event),
-    })
-    if (!response.ok) throw new Error('Could not calculate layout prices')
-    const prices: LayoutPricesResponse = await response.json()
-    // The backend must preserve requestId and serviceIds.
+    let prices: LayoutPricesResponse
+    try {
+      const response = await fetch('/tecsafe/layout-prices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(e.event),
+      })
+      if (!response.ok) throw new Error('Could not calculate layout prices')
+      // The backend must preserve requestId and serviceIds.
+      prices = await response.json()
+    } catch {
+      prices = {
+        requestId: e.event.requestId,
+        success: false,
+        error: 'Could not calculate layout prices',
+      }
+    }
     e.respond(OUT_MESSAGES.OutMessageLayoutPrices.create(prices))
   })
 
@@ -203,6 +212,19 @@ Reply with `layout-prices`, preserving `requestId` and each service's `serviceId
 layout's quantity scales and service prices for the current customer. Preserve existing allowances
 and charges and include any shop adjustments. Service responses require pricing and the service ID;
 titles, categories and mandatory flags do not need to be repeated.
+
+Always respond, including when a calculation, tax lookup, or backend request fails. Send
+`{ requestId, success: false }`, optionally including a customer-safe `error` string, and omit
+`layout` and `tecsafeServices`. Catch application errors in the handler as shown above; the SDK
+does not automatically turn thrown errors into responses. A failure uses the same `layout-prices`
+message and original `requestId` so the widget can stop waiting and report that pricing is
+unavailable instead of treating the request as successful or using zero prices.
+
+Successful responses may include `success: true`; omitting it remains supported for existing
+integrations. Consumers must check `response.success === false` before accessing prices. The
+exported `LayoutPricesSuccessResponse` and `LayoutPricesFailureResponse` types describe each
+outcome, and `LayoutPricesResponse` is their union. Widgets must support the failure outcome
+before a shop starts sending it.
 
 Article info, layout price responses and cart punchout use the session's configured `currencyCode`,
 `priceMode` (`gross` or `net`) and tax categories. Tax category codes such as `S` and `AA` refer to
